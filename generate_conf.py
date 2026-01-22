@@ -1,11 +1,14 @@
-#!/usr/bin/env python3
+### bonne version 
+
 
 import json
 import ipaddress
 from dataclasses import dataclass, field
 import os
-import shutil
+import shutil 
 from typing import Dict, List, Optional
+
+
 
 @dataclass
 class Interface:
@@ -14,14 +17,16 @@ class Interface:
     prefix_len: int
     ospf_area: Optional[int] = None
     ripng: bool = False
-    ospf_cost: Optional[int] = None
+
 
 @dataclass
 class Neighbor:
     router: str
     type: str
     interface: str
-    ospf_cost: Optional[int] = None 
+    ospf_cost: Optional[int]=None #
+    bgp_role: Optional[str] = None   # <-- nouveau
+
 
 @dataclass
 class Router:
@@ -29,11 +34,12 @@ class Router:
     role: str
     asn: int
     neighbors: List[Neighbor]
-    rr_role: Optional[str] = None  # "server" ou "client"
     loopback: Optional[ipaddress.IPv6Address] = None
     interfaces: Dict[str, Interface] = field(default_factory=dict)
     bgp_neighbors: Dict[str, int] = field(default_factory=dict)
     bgp_policies: Dict[str, Dict[str, str]] = field(default_factory=dict)
+
+
 
 @dataclass
 class AutonomousSystem:
@@ -47,6 +53,7 @@ class AutonomousSystem:
     process_id: Optional[int] = None
     area: Optional[int] = None
     routers: Dict[str, Router] = field(default_factory=dict)
+    bgp_policies: Dict[str, Dict] = field(default_factory=dict) ###
 
     def allocate_loopback(self) -> ipaddress.IPv6Address:
         used = {r.loopback for r in self.routers.values() if r.loopback}
@@ -58,20 +65,26 @@ class AutonomousSystem:
     def allocate_link_prefix(self, inter_as: bool = False) -> ipaddress.IPv6Network:
         pool = self.inter_as_link_pool if inter_as else self.link_pool
         subnets = list(pool.subnets(new_prefix=64))
+
         used = set()
         for r in self.routers.values():
             for iface in r.interfaces.values():
                 net = ipaddress.IPv6Network(f"{iface.ipv6}/{iface.prefix_len}", strict=False)
                 used.add(net.supernet(new_prefix=64))
+
         for net in subnets:
             if net not in used:
                 return net
+
         raise ValueError("Link pool exhausted")
+
+
 
 def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
     data = json.load(open(path))
     as_map: Dict[str, AutonomousSystem] = {}
 
+    # Création des objets AutonomousSystem et Router
     for as_data in data["autonomous_systems"]:
         as_obj = AutonomousSystem(
             name=as_data["name"],
@@ -83,27 +96,31 @@ def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
             protocol=as_data["routing"]["protocol"],
             process_id=as_data["routing"].get("process_id"),
             area=as_data["routing"].get("area"),
+            bgp_policies = as_data.get("bgp_policies", {})
         )
         for rdata in as_data["routers"]:
             router = Router(
                 name=rdata["name"],
                 role=rdata["role"],
-                rr_role=rdata.get("rr_role"), # Récupération du rôle RR
                 asn=as_obj.asn,
                 neighbors=[Neighbor(**n) for n in rdata.get("neighbors", [])]
             )
             as_obj.routers[router.name] = router
         as_map[as_obj.name] = as_obj
 
-    # Logique des politiques BGP
+    # Appliquer les politiques BGP selon les relations inter-AS
     for as_data in data["autonomous_systems"]:
+        local_asn = as_data["asn"]
         local_as_name = as_data["name"]
         bgp_policies = as_data.get("bgp_policies", {})
-        neighbors_policy = bgp_policies.get("as_neighbors", {})
+        neighbors = bgp_policies.get("as_neighbors", {})
         policies = bgp_policies.get("policies", {})
 
+        # Inverser la table pour retrouver le rôle d’un ASN
         as_roles = {}
-        for role, remote_as_list in neighbors_policy.items():
+        for role, remote_as_list in neighbors.items():
+            if role not in ("provider", "peer", "customer"):
+                continue
             for remote_as in remote_as_list:
                 as_roles[int(remote_as)] = role
 
@@ -114,7 +131,9 @@ def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
                     remote_as_name, remote_router_name = neigh.router.split(":")
                     remote_asn = as_map[remote_as_name].asn
                     role = as_roles.get(remote_asn)
-                    if not role: continue
+
+                    if not role:
+                        continue  # pas de rôle défini -> pas de policy
 
                     policy = {}
                     if role in policies.get("communities", {}):
@@ -124,15 +143,21 @@ def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
                     if role == "provider":
                         policy["export_only_community"] = policies["communities"]["provider"]
 
-                    router.bgp_policies[remote_router_name] = policy
+                    #router.bgp_policies[remote_router_name] = policy
+                    role = as_roles.get(remote_asn)
+                    if role:
+                        neigh.bgp_role = role
 
     return as_map
 
+
 def allocate_addresses(as_map: Dict[str, AutonomousSystem]) -> None:
+    # Loopback allocation
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
             router.loopback = as_obj.allocate_loopback()
 
+    # Intra-AS links allocation
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
             for neigh in router.neighbors:
@@ -140,39 +165,36 @@ def allocate_addresses(as_map: Dict[str, AutonomousSystem]) -> None:
                     neigh_router = as_obj.routers[neigh.router]
                     if neigh.interface not in router.interfaces:
                         link_prefix = as_obj.allocate_link_prefix(inter_as=False)
+                        r_ip = link_prefix[1]
+                        n_ip = link_prefix[2]
+
                         router.interfaces[neigh.interface] = Interface(
-                            name=neigh.interface, ipv6=link_prefix[1], prefix_len=64,
+                            name=neigh.interface,
+                            ipv6=r_ip,
+                            prefix_len=64,
                             ospf_area=as_obj.area if as_obj.protocol == "ospfv3" else None,
-                            ripng=(as_obj.protocol == "rip"),
-                            ospf_cost=neigh.ospf_cost
-                        )
-                        remote_iface = next(n.interface for n in neigh_router.neighbors if n.router == router.name)
-                        neigh_router.interfaces[remote_iface] = Interface(
-                            name=remote_iface, ipv6=link_prefix[2], prefix_len=64,
-                            ospf_area=as_obj.area if as_obj.protocol == "ospfv3" else None,
-                            ripng=(as_obj.protocol == "rip"),
-                            ospf_cost=neigh.ospf_cost
+                            ripng=(as_obj.protocol == "rip")
                         )
 
-def build_bgp_sessions(as_map: Dict[str, AutonomousSystem]) -> None:
+                        remote_iface = next(n.interface for n in neigh_router.neighbors if n.router == router.name)
+                        neigh_router.interfaces[remote_iface] = Interface(
+                            name=remote_iface,
+                            ipv6=n_ip,
+                            prefix_len=64,
+                            ospf_area=as_obj.area if as_obj.protocol == "ospfv3" else None,
+                            ripng=(as_obj.protocol == "rip")
+                        )
+
+
+def build_bgp_fullmesh(as_map: Dict[str, AutonomousSystem]) -> None:
     for as_obj in as_map.values():
         routers = list(as_obj.routers.values())
-        rr_servers = [r for r in routers if r.rr_role == "server"]
-        
-        if rr_servers:
-            # Mode Route Reflector : Clients vers Serveurs
-            for rr in rr_servers:
-                for client in routers:
-                    if rr.name != client.name:
-                        rr.bgp_neighbors[str(client.loopback)] = as_obj.asn
-                        client.bgp_neighbors[str(rr.loopback)] = as_obj.asn
-        else:
-            # Mode Full Mesh
-            for i in range(len(routers)):
-                for j in range(i + 1, len(routers)):
-                    r1, r2 = routers[i], routers[j]
-                    r1.bgp_neighbors[str(r2.loopback)] = as_obj.asn
-                    r2.bgp_neighbors[str(r1.loopback)] = as_obj.asn
+        for i in range(len(routers)):
+            for j in range(i + 1, len(routers)):
+                r1, r2 = routers[i], routers[j]
+                r1.bgp_neighbors[str(r2.loopback)] = as_obj.asn
+                r2.bgp_neighbors[str(r1.loopback)] = as_obj.asn
+
 
 def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem]) -> None:
     for as_obj in as_map.values():
@@ -180,160 +202,287 @@ def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem]) -> None:
             for neigh in router.neighbors:
                 if neigh.type == "inter-as":
                     remote_as_name, remote_router_name = neigh.router.split(":")
-                    if remote_router_name > router.name:
+                    if remote_router_name > router.name: # pour pas faire deux fois
                         remote_as = as_map[remote_as_name]
                         remote_router = remote_as.routers[remote_router_name]
+
                         link_prefix = as_obj.allocate_link_prefix(inter_as=True)
-                        
+                        r_ip = link_prefix[1]
+                        n_ip = link_prefix[2]
+
                         router.interfaces[neigh.interface] = Interface(
-                            name=neigh.interface, ipv6=link_prefix[1], prefix_len=64
+                            name=neigh.interface,
+                            ipv6=r_ip,
+                            prefix_len=64,
+                            ospf_area=as_obj.area if as_obj.protocol == "ospfv3" else None,
+                            ripng=False
                         )
+
                         remote_iface = next(n.interface for n in remote_router.neighbors if n.router == f"{as_obj.name}:{router.name}")
                         remote_router.interfaces[remote_iface] = Interface(
-                            name=remote_iface, ipv6=link_prefix[2], prefix_len=64
+                            name=remote_iface,
+                            ipv6=n_ip,
+                            prefix_len=64,
+                            ospf_area=remote_as.area if remote_as.protocol == "ospfv3" else None,
+                            ripng=False
                         )
-                        router.bgp_neighbors[str(link_prefix[2])] = remote_as.asn
-                        remote_router.bgp_neighbors[str(link_prefix[1])] = as_obj.asn
+
+                        router.bgp_neighbors[str(n_ip)] = remote_as.asn
+                        remote_router.bgp_neighbors[str(r_ip)] = as_obj.asn
 
 def router_id_from_name(router_name: str) -> str:
+    # R1 -> 1.1.1.1
     num = int(router_name.lstrip("R"))
     return f"{num}.{num}.{num}.{num}"
 
+
 def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dict[str, AutonomousSystem]) -> str:
     rid = router_id_from_name(router.name)
-    inter_as_iface = next((n.interface for n in router.neighbors if n.type == "inter-as"), None)
 
-    lines = [
-        "!", "version 15.2", "service timestamps debug datetime msec",
-        "service timestamps log datetime msec", "!", f"hostname {router.name}", "!",
-        "ip cef", "no ip domain lookup", "ipv6 unicast-routing", "ipv6 cef", "!",
-        "interface Loopback0", " no ip address", " no shutdown",
-        f" ipv6 address {router.loopback}/128", " ipv6 enable"
-    ]
+    # Find inter-AS interface (if any)
+    inter_as_iface = None
+    for neigh in router.neighbors:
+        if neigh.type == "inter-as":
+            inter_as_iface = neigh.interface
+            break
     
+    # Map interface name -> ospf_cost (si défini)
+    iface_costs = {
+        n.interface: n.ospf_cost
+        for n in router.neighbors
+        if n.ospf_cost is not None and n.type == "intra-as"
+    }
+
+    # Mapping IP neighbor -> role
+    bgp_role_by_ip = {}
+
+    for neigh in router.neighbors:
+        if neigh.type == "inter-as":
+            # IP locale
+            local_ip = router.interfaces[neigh.interface].ipv6
+
+            # Trouver le router distant
+            remote_as_name, remote_router_name = neigh.router.split(":")
+
+            remote_as = as_map[remote_as_name]
+            remote_router = remote_as.routers[remote_router_name]
+
+            # Trouver l'interface du voisin qui pointe vers nous
+            remote_iface_name = next(
+                n.interface for n in remote_router.neighbors
+                if n.router == f"{as_obj.name}:{router.name}"
+            )
+
+            remote_ip = remote_router.interfaces[remote_iface_name].ipv6
+
+            # Mapping IP du voisin -> rôle
+            bgp_role_by_ip[str(remote_ip)] = neigh.bgp_role
+    #print(bgp_role_by_ip)
+
+    lines = []
+    lines.append("!")
+    lines.append("version 15.2")
+    lines.append("service timestamps debug datetime msec")
+    lines.append("service timestamps log datetime msec")
+    lines.append("!")
+    lines.append(f"hostname {router.name}")
+    lines.append("!")
+    lines.append("boot-start-marker")
+    lines.append("boot-end-marker")
+    lines.append("!")
+    lines.append("no aaa new-model")
+    lines.append("no ip icmp rate-limit unreachable")
+    lines.append("ip cef")
+    lines.append("!")
+    lines.append("no ip domain lookup")
+    lines.append("ipv6 unicast-routing")
+    lines.append("ipv6 cef")
+    lines.append("!")
+    lines.append("multilink bundle-name authenticated")
+    lines.append("!")
+    lines.append("ip tcp synwait-time 5")
+    lines.append("!")
+    lines.append("interface Loopback0")
+    lines.append(" no ip address")
+    lines.append(" no shutdown")
+    lines.append(f" ipv6 address {router.loopback}/128")
+    lines.append(" ipv6 enable")
     if as_obj.protocol == "ospfv3":
-        lines.append(f" ipv6 ospf {as_obj.process_id} area {as_obj.area}")
-    elif as_obj.protocol == "rip":
-        lines.append(f" ipv6 rip {as_obj.name} enable")
+        lines.append(f" ipv6 ospf {as_obj.process_id} area {as_obj.area}") #
+    elif as_obj.protocol == "rip": 
+        lines.append(f" ipv6 rip {as_obj.name} enable") 
     lines.append("!")
 
-    # --- Interfaces Physiques ---
     for iface in router.interfaces.values():
         lines.append(f"interface {iface.name}")
-        lines.append(" no ip address\n no shutdown\n negotiation auto")
-        lines.append(f" ipv6 address {iface.ipv6}/{iface.prefix_len}\n ipv6 enable")
-        
-        # IGP sur interfaces intra-as
-        if as_obj.protocol == "ospfv3" and iface.ospf_area is not None:
-            lines.append(f" ipv6 ospf {as_obj.process_id} area {iface.ospf_area}")
-            if iface.ospf_cost: 
-                lines.append(f" ipv6 ospf cost {iface.ospf_cost}")
+        lines.append(" no ip address")
+        lines.append(" no shutdown")
+        lines.append(" negotiation auto")
+        lines.append(f" ipv6 address {iface.ipv6}/{iface.prefix_len}")
+        lines.append(" ipv6 enable")
+
+        if as_obj.protocol == "ospfv3":
+            lines.append(f" ipv6 ospf {as_obj.process_id} area {iface.ospf_area}") #
+            if iface.name in iface_costs: #
+            #if hasattr(iface, "ospf_cost") and iface.ospf_cost is not None:
+
+                lines.append(f" ipv6 ospf cost {iface_costs[iface.name]}") #
+
         if iface.ripng:
             lines.append(f" ipv6 rip {as_obj.name} enable")
+
         lines.append("!")
 
-    # --- Configuration BGP ---
+    
+    # BGP
     lines.append(f"router bgp {router.asn}")
     lines.append(f" bgp router-id {rid}")
+    lines.append(" bgp log-neighbor-changes")
+    if router.role == "border":
+        lines.append(" no synchronization")
     lines.append(" no bgp default ipv4-unicast")
 
-    # Déclaration des voisins (Global)
     for neigh_ip, neigh_asn in router.bgp_neighbors.items():
         lines.append(f" neighbor {neigh_ip} remote-as {neigh_asn}")
         if neigh_asn == router.asn:
-            lines.append(f" neighbor {neigh_ip} update-source Loopback0")
-            if router.rr_role == "server":
-                lines.append(f" neighbor {neigh_ip} route-reflector-client")
-
+            lines.append(f" neighbor {neigh_ip} update-source Loopback0") # on n'ajoute cette ligne que pour notre as
+    
+    lines.append(" !")
+    lines.append(" address-family ipv4")
+    lines.append(" exit-address-family")
     lines.append(" !")
     lines.append(" address-family ipv6")
-    
+
     if router.role == "border":
         lines.append(f"  network {as_obj.ipv6_prefix}")
 
-    # Activation et Politiques par Address-Family
-    for neigh_ip, neigh_asn in router.bgp_neighbors.items():
-        lines.append(f"  neighbor {neigh_ip} activate")
-        
-        if neigh_asn == router.asn:
-            lines.append(f"  neighbor {neigh_ip} next-hop-self")
-        else:
-            # EBGP : Chercher la politique associée au routeur distant
-            target_router_name = None
-            for r_name in router.bgp_policies.keys():
-                # On vérifie si l'IP du voisin appartient au routeur nommé r_name
-                for target_as in as_map.values():
-                    if r_name in target_as.routers:
-                        rem_router = target_as.routers[r_name]
-                        if any(str(i.ipv6) == neigh_ip for i in rem_router.interfaces.values()):
-                            target_router_name = r_name
-                            break
-            
-            if target_router_name:
-                pol = router.bgp_policies[target_router_name]
-                if "set_community" in pol or "export_only_community" in pol:
-                    lines.append(f"  neighbor {neigh_ip} send-community")
-                    lines.append(f"  neighbor {neigh_ip} route-map RM-OUT-{target_router_name} out")
-                if "local_pref" in pol:
-                    lines.append(f"  neighbor {neigh_ip} route-map RM-IN-{target_router_name} in")
 
-    lines.append("  exit-address-family")
+    print(router.name,":",router.bgp_neighbors)
+    for neigh_ip in router.bgp_neighbors.keys():
+        role = bgp_role_by_ip.get(neigh_ip)
+        #print("role",role)
+        print(bgp_role_by_ip)
+        print(f"{neigh_ip} ")
+        lines.append(f"  neighbor {neigh_ip} activate")
+        if router.bgp_neighbors[neigh_ip] == router.asn:
+            lines.append(f"  neighbor {neigh_ip} next-hop-self")
+
+        # Appliquer la policy selon le rôle (provider/peer/customer)
+        if role:
+            if role in as_obj.bgp_policies["policies"].get("communities", {}):
+                lines.append(f"  neighbor {neigh_ip} send-community")
+                lines.append(f"  neighbor {neigh_ip} route-map SET-COMMUNITY-{role} out")
+
+            if role in as_obj.bgp_policies["policies"].get("local_pref", {}):
+                lines.append(f"  neighbor {neigh_ip} route-map SET-LOCALPREF-{role} in")
+
+            if role == "provider":
+                lines.append(f"  neighbor {neigh_ip} route-map EXPORT-FILTER-provider out")
+
+
+    lines.append(" exit-address-family")
     lines.append("!")
 
-    # --- Route Statique pour Border ---
+
+
+    # Rôles BGP réellement présents sur ce routeur
+    roles_present = set()
+
+    for neigh in router.neighbors:
+        if neigh.type == "inter-as" and neigh.bgp_role:
+            roles_present.add(neigh.bgp_role)
+    # route-maps pour communities (uniquement si le rôle est présent)
+    for role, comm in as_obj.bgp_policies["policies"]["communities"].items():
+        if role not in roles_present:
+            continue
+
+        lines.append(f"route-map SET-COMMUNITY-{role} permit 10")
+        lines.append(f" set community {comm}")
+        lines.append("!")
+
+    # route-maps pour local-pref (uniquement si le rôle est présent)
+    for role, lp in as_obj.bgp_policies["policies"]["local_pref"].items():
+        if role not in roles_present:
+            continue
+
+        lines.append(f"route-map SET-LOCALPREF-{role} permit 10")
+        lines.append(f" set local-preference {lp}")
+        lines.append("!")
+
+    # export filter (seulement si provider présent)
+    if "provider" in roles_present:
+        comm = as_obj.bgp_policies["policies"]["communities"]["provider"]
+        lines.append(f"ip community-list standard ONLY-EXPORT-provider permit {comm}")
+        lines.append("!")
+        lines.append("route-map EXPORT-FILTER-provider permit 10")
+        lines.append(" match community ONLY-EXPORT-provider")
+        lines.append("!")
+        lines.append("route-map EXPORT-FILTER-provider deny 20")
+        lines.append("!")
+
+
+    lines.append("ip forward-protocol nd")
+    lines.append("!")
+    lines.append("no ip http server")
+    lines.append("no ip http secure-server")
+    lines.append("!")
+
+    # Route statique vers le supernet (pour les routeurs border)
     if router.role == "border":
         lines.append(f"ipv6 route {as_obj.ipv6_prefix} Null0")
 
-    # --- Configuration IGP (Processus) ---
+    # Configuration IGP
     if as_obj.protocol == "rip":
         lines.append(f"ipv6 router rip {as_obj.name}")
+        lines.append("!")
     elif as_obj.protocol == "ospfv3":
-        lines.append(f"ipv6 router ospf {as_obj.process_id}\n router-id {rid}")
+        lines.append("ipv6 router ospf 1")
+        lines.append(f" router-id {rid}")
         if router.role == "border" and inter_as_iface:
             lines.append(f" passive-interface {inter_as_iface}")
+        lines.append("!")
+
+    lines.append("control-plane")
     lines.append("!")
-
-    # --- Génération des Route-Maps et Community-Lists ---
-    for r_name, pol in router.bgp_policies.items():
-        # Politique entrante (Local Preference)
-        if "local_pref" in pol:
-            lines.append(f"route-map RM-IN-{r_name} permit 10")
-            lines.append(f" set local-preference {pol['local_pref']}")
-            lines.append("!")
-        
-        # Politique sortante (Community)
-        if "set_community" in pol:
-            lines.append(f"route-map RM-OUT-{r_name} permit 10")
-            lines.append(f" set community {pol['set_community']}")
-            lines.append("!")
-        
-        # Filtre d'export (si provider)
-        if "export_only_community" in pol:
-            comm = pol["export_only_community"]
-            lines.append(f"ipv6 community-list standard L-ONLY-{r_name} permit {comm}")
-            lines.append(f"route-map RM-OUT-{r_name} permit 20")
-            lines.append(f" match community L-ONLY-{r_name}")
-            lines.append("!")
-
+    lines.append("line con 0")
+    lines.append(" exec-timeout 0 0")
+    lines.append(" privilege level 15")
+    lines.append(" logging synchronous")
+    lines.append(" stopbits 1")
+    lines.append("line aux 0")
+    lines.append(" exec-timeout 0 0")
+    lines.append(" privilege level 15")
+    lines.append(" logging synchronous")
+    lines.append(" stopbits 1")
+    lines.append("line vty 0 4")
+    lines.append(" login")
+    lines.append("!")
+    lines.append("!")
     lines.append("end")
+
     return "\n".join(lines)
 
 def main(intent_path):
+    #intent_path = "intent_file.json"
     as_map = parse_intent(intent_path)
-    if os.path.exists("configs"): shutil.rmtree("configs")
-    os.makedirs("configs", exist_ok=True)
+
+
+    if os.path.exists("configs2"):
+       shutil.rmtree("configs2") # Supprime le dossier s'il existe déjà
+    os.makedirs("configs2", exist_ok=True)
 
     allocate_addresses(as_map)
-    build_bgp_sessions(as_map)
+    build_bgp_fullmesh(as_map)
     build_inter_as_neighbors(as_map)
 
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
             cfg = generate_router_config(router, as_obj, as_map)
-            with open(f"configs/i{router.name[1:]}_startup-config.cfg", "w") as f:
+            with open(f"configs2/i{router.name[1:]}_startup-config.cfg", "w") as f:
                 f.write(cfg)
             print(f"Generated i{router.name[1:]}_startup-config.cfg")
 
+
 if __name__ == "__main__":
-    intent_path = 'test.json'
+    intent_path = "intent_9_routers.json"
     main(intent_path)
