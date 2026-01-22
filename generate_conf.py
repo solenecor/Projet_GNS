@@ -1,4 +1,3 @@
-### bonne version 
 
 
 import json
@@ -371,10 +370,10 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         if role:
             if role in as_obj.bgp_policies["policies"].get("communities", {}):
                 lines.append(f"  neighbor {neigh_ip} send-community")
-                lines.append(f"  neighbor {neigh_ip} route-map SET-COMMUNITY-{role} out")
+                lines.append(f"  neighbor {neigh_ip} route-map SET-COMMUNITY-{role} in")
 
-            if role in as_obj.bgp_policies["policies"].get("local_pref", {}):
-                lines.append(f"  neighbor {neigh_ip} route-map SET-LOCALPREF-{role} in")
+            """if role in as_obj.bgp_policies["policies"].get("local_pref", {}):
+                lines.append(f"  neighbor {neigh_ip} route-map SET-LOCALPREF-{role} in")"""
 
             if role == "provider":
                 lines.append(f"  neighbor {neigh_ip} route-map EXPORT-FILTER-provider out")
@@ -398,6 +397,7 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
 
         lines.append(f"route-map SET-COMMUNITY-{role} permit 10")
         lines.append(f" set community {comm}")
+        lines.append(f" set local-preference {as_obj.bgp_policies["policies"]["local_pref"][role]}")
         lines.append("!")
 
     # route-maps pour local-pref (uniquement si le rôle est présent)
@@ -484,5 +484,5 @@ def main(intent_path):
 
 
 if __name__ == "__main__":
-    intent_path = "intent_9_routers.json"
+    intent_path = "intent_file2.json"
     main(intent_path)
