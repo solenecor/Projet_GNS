@@ -1,3 +1,4 @@
+### bonne version 
 
 
 import json
@@ -400,14 +401,14 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         lines.append(f" set local-preference {as_obj.bgp_policies["policies"]["local_pref"][role]}")
         lines.append("!")
 
-    # route-maps pour local-pref (uniquement si le rôle est présent)
+    """# route-maps pour local-pref (uniquement si le rôle est présent)
     for role, lp in as_obj.bgp_policies["policies"]["local_pref"].items():
         if role not in roles_present:
             continue
 
         lines.append(f"route-map SET-LOCALPREF-{role} permit 10")
         lines.append(f" set local-preference {lp}")
-        lines.append("!")
+        lines.append("!")"""
 
     # export filter (seulement si provider présent)
     if "provider" in roles_present:
@@ -484,5 +485,5 @@ def main(intent_path):
 
 
 if __name__ == "__main__":
-    intent_path = "intent_file2.json"
+    intent_path = "intent_9_routers.json"
     main(intent_path)
