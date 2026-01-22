@@ -19,6 +19,6 @@ Descritpion de la configuration:
 
 Cette configuration est la version finale de notre code comprenant les améliorations suivantes: 
 - Les BGP Policies
-- Le Router Reflector
+- Les Router Reflector
 - Les coûts OSPF
 - Le déploiement Telnet
