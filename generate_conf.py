@@ -8,6 +8,7 @@ import shutil
 from typing import Dict, List, Optional
 
 
+from typing import Dict, List, Optional
 @dataclass
 class Interface:
     name: str
@@ -214,13 +215,6 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem) -> str:
         if neigh.type == "inter-as":
             inter_as_iface = neigh.interface
             break
-            
-    # Map interface name -> ospf_cost (si défini)
-    iface_costs = {
-        n.interface: n.ospf_cost
-        for n in router.neighbors
-        if n.ospf_cost is not None and n.type == "intra-as"
-    }
 
     lines = []
     lines.append("!")
@@ -344,13 +338,6 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem) -> str:
             lines.append("!")
             lines.append(f"route-map EXPORT-FILTER-{remote_name} deny 20")
             lines.append("!")
-            
-    
-    lines.append("ip forward-protocol nd")
-    lines.append("!")
-    lines.append("no ip http server")
-    lines.append("no ip http secure-server")
-    lines.append("!")
 
     # static route for supernet (only on border routers)
     if router.role == "border":
@@ -408,5 +395,5 @@ def main(intent_path):
 
 
 if __name__ == "__main__":
-    intent_path = "test.json"
+    intent_path = "int3AS.json"
     main(intent_path)
