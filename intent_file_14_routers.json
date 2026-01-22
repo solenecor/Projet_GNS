@@ -20,11 +20,13 @@
           {"router": "R3", "type": "intra-as", "interface": "GigabitEthernet2/0"}
         ]},
         { "name": "R2", "role": "core", "rr_role": "client", "neighbors": [
+          {"router": "AS3:R15", "type": "inter-as", "interface": "FastEthernet0/0"},
           {"router": "R1", "type": "intra-as", "interface": "GigabitEthernet1/0"},
           {"router": "R3", "type": "intra-as", "interface": "GigabitEthernet2/0"},
           {"router": "R4", "type": "intra-as", "interface": "GigabitEthernet3/0"}
         ]},
         { "name": "R3", "role": "core", "rr_role": "client", "neighbors": [
+          {"router": "AS4:R16", "type": "inter-as", "interface": "FastEthernet0/0"},
           {"router": "R1", "type": "intra-as", "interface": "GigabitEthernet1/0"},
           {"router": "R2", "type": "intra-as", "interface": "GigabitEthernet2/0"},
           {"router": "R5", "type": "intra-as", "interface": "GigabitEthernet3/0"}
@@ -47,6 +49,7 @@
           {"router": "AS2:R8", "type": "inter-as", "interface": "GigabitEthernet3/0"}
         ]},
         { "name": "R7", "role": "border", "rr_role": "client", "neighbors": [
+          {"router": "AS5:R17", "type": "inter-as", "interface": "FastEthernet0/0"},
           {"router": "R4", "type": "intra-as", "interface": "GigabitEthernet1/0"},
           {"router": "R5", "type": "intra-as", "interface": "GigabitEthernet2/0"},
           {"router": "AS2:R9", "type": "inter-as", "interface": "GigabitEthernet3/0"}
@@ -54,9 +57,9 @@
       ],
       "bgp_policies": {
         "as_neighbors": {
-          "providers": [2],
-          "peers": [],
-          "customers": []
+          "providers": [3],
+          "peers": [2],
+          "customers": [4, 5]
         },
         "policies": {
           "communities": { "provider": "1:30", "peer": "1:20", "customer": "1:10" },
@@ -119,6 +122,34 @@
       "bgp_policies": {
         "as_neighbors": {
           "providers": [],
+          "peers": [1],
+          "customers": []
+        },
+        "policies": {
+          "communities": { "provider": "1:30", "peer": "1:20", "customer": "1:10" },
+          "local_pref": { "provider": 50, "peer": 100, "customer": 200 }
+        }
+      }
+    },
+    {
+      "name": "AS3",
+      "asn": 3,
+      "addressing": {
+        "ipv6_prefix": "2001:100:3::/48",
+        "loopback_pool": "2001:100:3::/64",
+        "link_pool": "2001:100:3:100::/56"
+      },
+      "routing": {
+        "protocol": "rip"
+      },
+      "routers": [
+        { "name": "R15", "role": "core", "rr_role": "server", "neighbors": [
+          {"router": "AS1:R2", "type": "inter-as", "interface": "GigabitEthernet1/0"}
+        ]}        
+      ],
+      "bgp_policies": {
+        "as_neighbors": {
+          "providers": [],
           "peers": [],
           "customers": [1]
         },
@@ -127,7 +158,66 @@
           "local_pref": { "provider": 50, "peer": 100, "customer": 200 }
         }
       }
+    },
+    {
+      "name": "AS4",
+      "asn": 4,
+      "addressing": {
+        "ipv6_prefix": "2001:100:4::/48",
+        "loopback_pool": "2001:100:4::/64",
+        "link_pool": "2001:100:4:100::/56"
+      },
+      "routing": {
+        "protocol": "rip"
+      },
+      "routers": [
+        { "name": "R16", "role": "core", "rr_role": "server", "neighbors": [
+          {"router": "AS1:R3", "type": "inter-as", "interface": "GigabitEthernet1/0"}
+        ]}
+      ],
+      "bgp_policies": {
+        "as_neighbors": {
+          "providers": [1],
+          "peers": [],
+          "customers": []
+        },
+        "policies": {
+          "communities": { "provider": "1:30", "peer": "1:20", "customer": "1:10" },
+          "local_pref": { "provider": 50, "peer": 100, "customer": 200 }
+        }
+      }
+    },
+    {
+      "name": "AS5",
+      "asn": 5,
+      "addressing": {
+        "ipv6_prefix": "2001:100:5::/48",
+        "loopback_pool": "2001:100:5::/64",
+        "link_pool": "2001:100:5:100::/56"
+      },
+      "routing": {
+        "protocol": "rip"
+      },
+      "routers": [
+        { "name": "R17", "role": "core", "rr_role": "server", "neighbors": [
+          {"router": "AS1:R7", "type": "inter-as", "interface": "GigabitEthernet1/0"}
+        ]}
+      ],
+      "bgp_policies": {
+        "as_neighbors": {
+          "providers": [1],
+          "peers": [],
+          "customers": []
+        },
+        "policies": {
+          "communities": { "provider": "1:30", "peer": "1:20", "customer": "1:10" },
+          "local_pref": { "provider": 50, "peer": 100, "customer": 200 }
+        }
+      }
+      
+      
     }
+    
   ],
   "bgp": {
     "inter_as_link_pool": "2001:100:100::/56"
