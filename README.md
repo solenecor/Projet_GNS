@@ -11,7 +11,12 @@ Elle contient également des **bgp policies** (impliquant la création de *route
 Pour ce projet, nous avons créé 3 configurations réseau différentes : ![Configuration à 14 routeurs et connexion avec d'autres AS](img/final_config.png)
 
 Descritpion de la configuration: 
-- AS1: {R1, R2, R3, R4, R5, R6, 
+- AS1: {R1, R2, R3, R4, R5, R6, R7} ; qui a le rôle de peer
+- AS2: {R7, R8, R9, R10, R11, R12, R13, R14} ; qui a le rôle de peer
+- AS3: {R15} ; qui a le rôle de
+- AS4: {R16} ; qui a le rôle de
+- AS5: {R17} ; qui a le rôle de
+
 Cette configuration est la version finale de notre code comprenant les améliorations suivantes: 
 - Les BGP Policies
 - Le Router Reflector
