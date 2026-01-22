@@ -134,7 +134,8 @@ def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
 
                     if not role:
                         continue  # pas de rôle défini -> pas de policy
-
+                    
+                    neigh.bgp_role = role
                     policy = {}
                     if role in policies.get("communities", {}):
                         policy["set_community"] = policies["communities"][role]
@@ -143,7 +144,7 @@ def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
                     if role == "provider":
                         policy["export_only_community"] = policies["communities"]["provider"]
 
-                    #router.bgp_policies[remote_router_name] = policy
+                    router.bgp_policies[remote_router_name] = policy
                     role = as_roles.get(remote_asn)
                     if role:
                         neigh.bgp_role = role
@@ -234,6 +235,13 @@ def router_id_from_name(router_name: str) -> str:
     # R1 -> 1.1.1.1
     num = int(router_name.lstrip("R"))
     return f"{num}.{num}.{num}.{num}"
+
+def determine_bgp_role(local_asn, remote_asn, bgp_policies):
+    for role, as_list in bgp_policies["as_neighbors"].items():
+        if remote_asn in as_list:
+            return role
+    return None
+
 
 
 def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dict[str, AutonomousSystem]) -> str:
@@ -360,9 +368,7 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
     print(router.name,":",router.bgp_neighbors)
     for neigh_ip in router.bgp_neighbors.keys():
         role = bgp_role_by_ip.get(neigh_ip)
-        #print("role",role)
-        print(bgp_role_by_ip)
-        print(f"{neigh_ip} ")
+
         lines.append(f"  neighbor {neigh_ip} activate")
         if router.bgp_neighbors[neigh_ip] == router.asn:
             lines.append(f"  neighbor {neigh_ip} next-hop-self")
@@ -374,8 +380,8 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
                 lines.append(f"  neighbor {neigh_ip} route-map SET-COMMUNITY-{role} in")
 
             """if role in as_obj.bgp_policies["policies"].get("local_pref", {}):
-                lines.append(f"  neighbor {neigh_ip} route-map SET-LOCALPREF-{role} in")"""
-
+                lines.append(f"  neighbor {neigh_ip} route-map SET-LOCALPREF-{role} in")
+"""
             if role == "provider":
                 lines.append(f"  neighbor {neigh_ip} route-map EXPORT-FILTER-provider out")
 
@@ -385,11 +391,11 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
 
 
 
-    # Rôles BGP réellement présents sur ce routeur
+    """# Rôles BGP réellement présents sur ce routeur
     roles_present = set()
 
     for neigh in router.neighbors:
-        if neigh.type == "inter-as" and neigh.bgp_role:
+        if neigh.type == "inter-as":
             roles_present.add(neigh.bgp_role)
     # route-maps pour communities (uniquement si le rôle est présent)
     for role, comm in as_obj.bgp_policies["policies"]["communities"].items():
@@ -399,19 +405,37 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         lines.append(f"route-map SET-COMMUNITY-{role} permit 10")
         lines.append(f" set community {comm}")
         lines.append(f" set local-preference {as_obj.bgp_policies["policies"]["local_pref"][role]}")
-        lines.append("!")
-
-    """# route-maps pour local-pref (uniquement si le rôle est présent)
-    for role, lp in as_obj.bgp_policies["policies"]["local_pref"].items():
-        if role not in roles_present:
-            continue
-
-        lines.append(f"route-map SET-LOCALPREF-{role} permit 10")
-        lines.append(f" set local-preference {lp}")
         lines.append("!")"""
 
+    # Rôles BGP réellement présents sur ce routeur
+    roles_present = set()
+    for neigh in router.neighbors:
+        if neigh.type == "inter-as" and neigh.bgp_role:
+            roles_present.add(neigh.bgp_role)
+
+    # --- community-lists ---
+    for role in roles_present:
+        comm = as_obj.bgp_policies["policies"]["communities"][role]
+        lines.append(f"ip community-list standard ONLY-{role.upper()} permit {comm}")
+        lines.append("!")
+
+    # --- route-maps set community + local-pref ---
+    for role in roles_present:
+        comm = as_obj.bgp_policies["policies"]["communities"][role]
+        lp = as_obj.bgp_policies["policies"]["local_pref"][role]
+
+        lines.append(f"route-map SET-COMMUNITY-{role} permit 10")
+        lines.append(f" set community {comm}")
+        lines.append(f" set local-preference {lp}")
+        """lines.append("!")
+        lines.append(f"route-map SET-LOCALPREF-{role} permit 10")
+        lines.append(f" set local-preference {lp}")
+        lines.append("!")
+"""
+
+
     # export filter (seulement si provider présent)
-    if "provider" in roles_present:
+    """if "provider" in roles_present:
         comm = as_obj.bgp_policies["policies"]["communities"]["provider"]
         lines.append(f"ip community-list standard ONLY-EXPORT-provider permit {comm}")
         lines.append("!")
@@ -419,6 +443,26 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         lines.append(" match community ONLY-EXPORT-provider")
         lines.append("!")
         lines.append("route-map EXPORT-FILTER-provider deny 20")
+        lines.append("!")"""
+    
+    if "provider" in roles_present:
+        lines.append("route-map EXPORT-FILTER-provider deny 10")
+        lines.append(" match community ONLY-PEER")
+        lines.append("!")
+        lines.append("route-map EXPORT-FILTER-provider deny 20")
+        lines.append(" match community ONLY-PROVIDER")
+        lines.append("!")
+        lines.append("route-map EXPORT-FILTER-provider permit 30")
+        lines.append("!")
+
+    if "peer" in roles_present:
+        lines.append("route-map EXPORT-FILTER-peer deny 10")
+        lines.append(" match community ONLY-PEER")
+        lines.append("!")
+        lines.append("route-map EXPORT-FILTER-peer deny 20")
+        lines.append(" match community ONLY-PROVIDER")
+        lines.append("!")
+        lines.append("route-map EXPORT-FILTER-peer permit 30")
         lines.append("!")
 
 
