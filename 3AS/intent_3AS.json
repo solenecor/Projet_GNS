@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "name": "InterAS-IPv6-Intent-C7200"
-  },
+    "name": "InterAS-IPv6-Intent-9-routers" },
+    
   "autonomous_systems": [
     {
       "name": "AS1",
@@ -13,7 +13,9 @@
       },
       "routing": { "protocol": "rip" },
       "routers": [
-        { "name": "R1", "role": "core", "neighbors": [{ "router": "R2", "type": "intra-as", "interface": "GigabitEthernet1/0" }] },
+        { "name": "R1", "role": "core", "neighbors": [
+	        { "router": "R2", "type": "intra-as", "interface": "GigabitEthernet1/0" }
+	        ] },
         { "name": "R2", "role": "core", "neighbors": [
             { "router": "R1", "type": "intra-as", "interface": "GigabitEthernet1/0" },
             { "router": "R3", "type": "intra-as", "interface": "GigabitEthernet2/0" }
@@ -25,7 +27,26 @@
             { "router": "AS3:R7", "type": "inter-as", "interface": "FastEthernet0/0" }
           ]
         }
-      ]
+      ],
+      "bgp_policies":{
+        "as_neighbors":{
+          "provider":[],
+          "peer":[3],
+          "customer":[2] 
+        },
+        "policies": {
+          "communities": {
+            "provider": "1:30",
+            "peer": "1:20",
+            "customer": "1:10"
+          },
+          "local_pref": {
+            "provider": 50,
+            "peer": 100,
+            "customer": 200
+          }
+        }
+      }
     },
     {
       "name": "AS2",
@@ -52,7 +73,26 @@
             { "router": "R5", "type": "intra-as", "interface": "GigabitEthernet1/0", "ospf_cost": 100 }
           ]
         }
-      ]
+      ], 
+      "bgp_policies":{
+		        "as_neighbors":{
+		          "provider":[1],
+		          "peer":[3],
+		          "customer":[] 
+		        },
+		        "policies": {
+		          "communities": {
+		            "provider": "1:30",
+		            "peer": "1:20",
+		            "customer": "1:10"
+		          },
+		          "local_pref": {
+		            "provider": 50,
+		            "peer": 100,
+		            "customer": 200
+		          }
+		        }
+		      }
     },
     {
       "name": "AS3",
@@ -79,26 +119,27 @@
             { "router": "R8", "type": "intra-as", "interface": "GigabitEthernet1/0", "ospf_cost": 100 }
           ]
         }
-      ]
+      ],
+      "bgp_policies":{
+		        "as_neighbors":{
+		          "provider":[],
+		          "peer":[1],
+		          "customer":[] 
+		        },
+		        "policies": {
+		          "communities": {
+		            "provider": "1:30",
+		            "peer": "1:20",
+		            "customer": "1:10"
+		          },
+		          "local_pref": {
+		            "provider": 50,
+		            "peer": 100,
+		            "customer": 200
+		          }
+		        }
+		      }
     }
   ],
-  "bgp": { "inter_as_link_pool": "2001:100:100::/56" },
-  "bgp_policies": {
-    "AS1": { "neighbors": [
-        { "local_router": "R3", "remote_router": "R4", "relationship": "customer", "set_community": "1:10", "local_pref": 200 },
-        { "local_router": "R3", "remote_router": "R7", "relationship": "peer", "set_community": "1:20", "local_pref": 100 }
-      ]
-    },
-    "AS2": { "neighbors": [
-        { "local_router": "R4", "remote_router": "R3", "relationship": "provider", "set_community": "1:30", "local_pref": 50 }
-      ]
-    },
-    "AS3": { "neighbors": [
-        { "local_router": "R7", "remote_router": "R3", "relationship": "peer", "set_community": "1:20", "local_pref": 100 }
-      ]
-    }
-  }
+  "bgp": { "inter_as_link_pool": "2001:100:100::/56" }
 }
-
-
-
