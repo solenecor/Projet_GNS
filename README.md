@@ -13,11 +13,12 @@ Pour ce projet, nous avons créé 3 configurations réseau différentes : ![Conf
 Descritpion de la configuration: 
 - AS1: {R1, R2, R3, R4, R5, R6, R7} ; qui a le rôle de peer
 - AS2: {R7, R8, R9, R10, R11, R12, R13, R14} ; qui a le rôle de peer
-- AS3: {R15} ; qui a le rôle de
-- AS4: {R16} ; qui a le rôle de
-- AS5: {R17} ; qui a le rôle de
+- AS3: {R15} ; qui a le rôle de provider
+- AS4: {R16} ; qui a le rôle de customer
+- AS5: {R17} ; qui a le rôle de customer
 
 Cette configuration est la version finale de notre code comprenant les améliorations suivantes: 
 - Les BGP Policies
 - Le Router Reflector
--  
+- Les coûts OSPF
+- Le déploiement Telnet
