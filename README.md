@@ -1,4 +1,5 @@
 # Projet de programmation réseau - utilisation de GNS3
+Pour ce projet, nous avons créé différentes configurations: *
 
 ## Configurations 
 - **Configuration à 6 routeurs** ```conf_manuelle```
@@ -9,7 +10,7 @@ Elle contient également des **bgp policies** (impliquant la création de *route
 
 - **Configuration à 14 routeurs** ```final_conf```
 
-Pour ce projet, nous avons créé 3 configurations réseau différentes : ![Configuration à 14 routeurs et connexion avec d'autres AS](img/final_config.png)
+ ![Configuration à 14 routeurs et connexion avec d'autres AS](img/final_config.png)
 
 Descritpion de la configuration: 
 - AS1: {R1, R2, R3, R4, R5, R6, R7} ; RIP ; qui a le rôle de peer
