@@ -8,6 +8,7 @@ Cette configuration a été réalisée à la main pendant les 4 premières heure
 Elle contient également des **bgp policies** (impliquant la création de *route-maps*) pour vérifier le bon fonctionnement de notre fichier d'automatisation python.
 
 - **Configuration à 14 routeurs** ```final_conf```
+
 Pour ce projet, nous avons créé 3 configurations réseau différentes : ![Configuration à 14 routeurs et connexion avec d'autres AS](img/final_config.png)
 
 Descritpion de la configuration: 
