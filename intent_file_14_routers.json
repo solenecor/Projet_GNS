@@ -57,9 +57,9 @@
       ],
       "bgp_policies": {
         "as_neighbors": {
-          "providers": [3],
-          "peers": [2],
-          "customers": [4, 5]
+          "provider": [3],
+          "peer": [2],
+          "customer": [4, 5]
         },
         "policies": {
           "communities": { "provider": "1:30", "peer": "1:20", "customer": "1:10" },
@@ -121,9 +121,9 @@
       ],
       "bgp_policies": {
         "as_neighbors": {
-          "providers": [],
-          "peers": [1],
-          "customers": []
+          "provider": [],
+          "peer": [1],
+          "customer": []
         },
         "policies": {
           "communities": { "provider": "1:30", "peer": "1:20", "customer": "1:10" },
@@ -149,9 +149,9 @@
       ],
       "bgp_policies": {
         "as_neighbors": {
-          "providers": [],
-          "peers": [],
-          "customers": [1]
+          "provider": [],
+          "peer": [],
+          "customer": [1]
         },
         "policies": {
           "communities": { "provider": "1:30", "peer": "1:20", "customer": "1:10" },
@@ -177,9 +177,9 @@
       ],
       "bgp_policies": {
         "as_neighbors": {
-          "providers": [1],
-          "peers": [],
-          "customers": []
+          "provider": [1],
+          "peer": [],
+          "customer": []
         },
         "policies": {
           "communities": { "provider": "1:30", "peer": "1:20", "customer": "1:10" },
@@ -205,9 +205,9 @@
       ],
       "bgp_policies": {
         "as_neighbors": {
-          "providers": [1],
-          "peers": [],
-          "customers": []
+          "provider": [1],
+          "peer": [],
+          "customer": []
         },
         "policies": {
           "communities": { "provider": "1:30", "peer": "1:20", "customer": "1:10" },
