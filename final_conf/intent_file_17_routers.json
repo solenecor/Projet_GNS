@@ -1,0 +1,270 @@
+{
+  "metadata": {
+    "name": "InterAS-IPv6-Intent-RR-Fixed"
+  },
+  "autonomous_systems": [
+    {
+      "name": "AS1",
+      "asn": 1,
+      "addressing": {
+        "ipv6_prefix": "2001:100:1::/48",
+        "loopback_pool": "2001:100:1::/64",
+        "link_pool": "2001:100:1:100::/56"
+      },
+      "routing": { "protocol": "rip"},
+      "routers": [
+        { "name": "R1", "role": "core", "rr_role": "server", "neighbors": [
+          {"router": "R2", "type": "intra-as", "interface": "GigabitEthernet1/0"},
+          {"router": "R3", "type": "intra-as", "interface": "GigabitEthernet2/0"}
+          ]
+        },
+        { "name": "R2", "role": "core", "rr_role": "client", "neighbors": [
+          {"router": "R1", "type": "intra-as", "interface": "GigabitEthernet1/0"},
+          {"router": "R3", "type": "intra-as", "interface": "GigabitEthernet2/0"},
+          {"router": "R4", "type": "intra-as", "interface": "GigabitEthernet3/0"},
+          {"router": "AS3:R15", "type": "inter-as", "interface": "FastEthernet0/0"}
+          ]
+        },
+        { "name": "R3", "role": "core", "rr_role": "client", "neighbors": [
+          {"router": "R1", "type": "intra-as", "interface": "GigabitEthernet1/0"},
+          {"router": "R2", "type": "intra-as", "interface": "GigabitEthernet2/0"},
+          {"router": "R5", "type": "intra-as", "interface": "GigabitEthernet3/0"},
+          {"router": "AS4:R16", "type": "inter-as", "interface": "FastEthernet0/0"}
+          ]
+        },
+        { "name": "R4", "role": "core", "rr_role": "client", "neighbors": [
+          {"router": "R2", "type": "intra-as", "interface": "GigabitEthernet1/0"},
+          {"router": "R5", "type": "intra-as", "interface": "GigabitEthernet2/0"},
+          {"router": "R6", "type": "intra-as", "interface": "GigabitEthernet3/0"},
+          {"router": "R7", "type": "intra-as", "interface": "FastEthernet0/0"}
+          ]
+        },
+        { "name": "R5", "role": "core", "rr_role": "client", "neighbors": [
+          {"router": "R3", "type": "intra-as", "interface": "GigabitEthernet1/0"},
+          {"router": "R4", "type": "intra-as", "interface": "GigabitEthernet2/0"},
+          {"router": "R6", "type": "intra-as", "interface": "GigabitEthernet3/0"},
+          {"router": "R7", "type": "intra-as", "interface": "FastEthernet0/0"}
+          ]
+        },
+        { "name": "R6", "role": "border", "rr_role": "client", "neighbors": [
+          {"router": "R4", "type": "intra-as", "interface": "GigabitEthernet1/0"},
+          {"router": "R5", "type": "intra-as", "interface": "GigabitEthernet2/0"},
+          {"router": "AS2:R8", "type": "inter-as", "interface": "GigabitEthernet3/0"}
+          ]
+        },
+        { "name": "R7", "role": "border", "rr_role": "client", "neighbors": [
+          {"router": "R4", "type": "intra-as", "interface": "GigabitEthernet1/0"},
+          {"router": "R5", "type": "intra-as", "interface": "GigabitEthernet2/0"},
+          {"router": "AS2:R9", "type": "inter-as", "interface": "GigabitEthernet3/0"},
+          {"router": "AS5:R17", "type": "inter-as", "interface": "FastEthernet0/0"}
+          ]
+        }
+      ],
+      "bgp_policies": {
+        "as_neighbors": {
+          "provider": [3],
+          "peer": [2],
+          "customer": [4, 5]
+        },
+        "policies": {
+          "communities": {
+            "provider": "1:30",
+            "peer": "1:20",
+            "customer": "1:10"
+          },
+          "local_pref": {
+            "provider": 50,
+            "peer": 100,
+            "customer": 200
+          }
+        }
+      }
+    },
+    {
+      "name": "AS2",
+      "asn": 2,
+      "addressing": {
+        "ipv6_prefix": "2001:100:2::/48",
+        "loopback_pool": "2001:100:2::/64",
+        "link_pool": "2001:100:2:100::/56"
+      },
+      "routing": { "protocol": "ospfv3", "process_id": 1, "area": 0},
+      "routers": [
+        { "name": "R8", "role": "border", "rr_role": "client", "neighbors": [
+          {"router": "AS1:R6", "type": "inter-as", "interface": "GigabitEthernet1/0"},
+          {"router": "R10", "type": "intra-as", "interface": "GigabitEthernet2/0", "ospf_cost": 10},
+          {"router": "R11", "type": "intra-as", "interface": "GigabitEthernet3/0", "ospf_cost": 10}
+          ]
+        },
+        { "name": "R9", "role": "border", "rr_role": "client", "neighbors": [
+          {"router": "AS1:R7", "type": "inter-as", "interface": "GigabitEthernet1/0"},
+          {"router": "R10", "type": "intra-as", "interface": "GigabitEthernet2/0", "ospf_cost": 10},
+          {"router": "R11", "type": "intra-as", "interface": "GigabitEthernet3/0", "ospf_cost": 10}
+          ]
+        },
+        { "name": "R10", "role": "core", "rr_role": "server", "neighbors": [
+          {"router": "R8", "type": "intra-as", "interface": "GigabitEthernet1/0", "ospf_cost": 10},
+          {"router": "R9", "type": "intra-as", "interface": "GigabitEthernet2/0", "ospf_cost": 10},
+          {"router": "R11", "type": "intra-as", "interface": "GigabitEthernet3/0", "ospf_cost": 10},
+          {"router": "R12", "type": "intra-as", "interface": "FastEthernet0/0", "ospf_cost": 10}
+          ]
+        },
+        { "name": "R11", "role": "core", "rr_role": "client", "neighbors": [
+          {"router": "R8", "type": "intra-as", "interface": "GigabitEthernet1/0", "ospf_cost": 10},
+          {"router": "R9", "type": "intra-as", "interface": "GigabitEthernet2/0", "ospf_cost": 10},
+          {"router": "R10", "type": "intra-as", "interface": "GigabitEthernet3/0", "ospf_cost": 10},
+          {"router": "R13", "type": "intra-as", "interface": "FastEthernet0/0", "ospf_cost": 10}
+          ]
+        },
+        { "name": "R12", "role": "core", "rr_role": "client", "neighbors": [
+          {"router": "R10", "type": "intra-as", "interface": "GigabitEthernet1/0", "ospf_cost": 10},
+          {"router": "R13", "type": "intra-as", "interface": "GigabitEthernet2/0", "ospf_cost": 10},
+          {"router": "R14", "type": "intra-as", "interface": "GigabitEthernet3/0", "ospf_cost": 100}
+          ]
+        },
+        { "name": "R13", "role": "core", "rr_role": "client", "neighbors": [
+          {"router": "R11", "type": "intra-as", "interface": "GigabitEthernet1/0", "ospf_cost": 10},
+          {"router": "R12", "type": "intra-as", "interface": "GigabitEthernet2/0", "ospf_cost": 10},
+          {"router": "R14", "type": "intra-as", "interface": "GigabitEthernet3/0", "ospf_cost": 10}
+          ]
+        },
+        { "name": "R14", "role": "core", "rr_role": "client", "neighbors": [
+          {"router": "R12", "type": "intra-as", "interface": "GigabitEthernet1/0", "ospf_cost": 100},
+          {"router": "R13", "type": "intra-as", "interface": "GigabitEthernet2/0", "ospf_cost": 10}
+          ]
+        }
+      ],
+      "bgp_policies": {
+        "as_neighbors": {
+          "provider": [],
+          "peer": [1],
+          "customer": []
+        },
+        "policies": {
+          "communities": {
+            "provider": "1:30",
+            "peer": "1:20",
+            "customer": "1:10"
+          },
+          "local_pref": {
+            "provider": 50,
+            "peer": 100,
+            "customer": 200
+          }
+        }
+      }
+    },
+    {
+      "name": "AS3",
+      "asn": 3,
+      "addressing": {
+        "ipv6_prefix": "2001:100:3::/48",
+        "loopback_pool": "2001:100:3::/64",
+        "link_pool": "2001:100:3:100::/56"
+      },
+      "routing": {
+        "protocol": "rip"
+      },
+      "routers": [
+        { "name": "R15", "role": "border", "rr_role": "server", "neighbors": [
+          {"router": "AS1:R2", "type": "inter-as", "interface": "GigabitEthernet1/0"}
+          ]
+        }        
+      ],
+      "bgp_policies": {
+        "as_neighbors": {
+          "provider": [],
+          "peer": [],
+          "customer": [1]
+        },
+        "policies": {
+          "communities": {
+            "provider": "1:30",
+            "peer": "1:20",
+            "customer": "1:10"
+          },
+          "local_pref": {
+            "provider": 50,
+            "peer": 100,
+            "customer": 200
+          }
+        }
+      }
+    },
+    {
+      "name": "AS4",
+      "asn": 4,
+      "addressing": {
+        "ipv6_prefix": "2001:100:4::/48",
+        "loopback_pool": "2001:100:4::/64",
+        "link_pool": "2001:100:4:100::/56"
+      },
+      "routing": {
+        "protocol": "rip"
+      },
+      "routers": [
+        { "name": "R16", "role": "border", "rr_role": "server", "neighbors": [
+          {"router": "AS1:R3", "type": "inter-as", "interface": "GigabitEthernet1/0"}
+          ]
+        }
+      ],
+      "bgp_policies": {
+        "as_neighbors": {
+          "provider": [1],
+          "peer": [],
+          "customer": []
+        },
+        "policies": {
+          "communities": {
+            "provider": "1:30",
+            "peer": "1:20",
+            "customer": "1:10"
+          },
+          "local_pref": {
+            "provider": 50,
+            "peer": 100,
+            "customer": 200
+          }
+        }
+      }
+    },
+    {
+      "name": "AS5",
+      "asn": 5,
+      "addressing": {
+        "ipv6_prefix": "2001:100:5::/48",
+        "loopback_pool": "2001:100:5::/64",
+        "link_pool": "2001:100:5:100::/56"
+      },
+      "routing": {
+        "protocol": "rip"
+      },
+      "routers": [
+        { "name": "R17", "role": "border", "rr_role": "server", "neighbors": [
+          {"router": "AS1:R7", "type": "inter-as", "interface": "GigabitEthernet1/0"}
+          ]
+        }
+      ],
+      "bgp_policies": {
+        "as_neighbors": {
+          "provider": [1],
+          "peer": [],
+          "customer": []
+        },
+        "policies": {
+          "communities": {
+            "provider": "1:30",
+            "peer": "1:20",
+            "customer": "1:10"
+          },
+          "local_pref": {
+            "provider": 50,
+            "peer": 100,
+            "customer": 200
+          }
+        }
+      }
+    }
+  ],
+  "bgp": {"inter_as_link_pool": "2001:100:100::/56"}
+}
