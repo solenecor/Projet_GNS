@@ -1,4 +1,7 @@
+
 #!/usr/bin/env python3
+
+### bonne version 
 
 
 import json
@@ -8,15 +11,15 @@ import os
 import shutil 
 from typing import Dict, List, Optional
 
-
+## @ : alias --> permet de créer une fonction init sans avoir à la déf : + rapide
 
 @dataclass
 class Interface:
     name: str
     ipv6: ipaddress.IPv6Address
     prefix_len: int
-    ospf_area: Optional[int] = None
-    ripng: bool = False
+    ospf_area: Optional[int] = None # area ospf
+    ripng: bool = False # does rip?
 
 
 @dataclass
@@ -24,20 +27,24 @@ class Neighbor:
     router: str
     type: str
     interface: str
-    ospf_cost: Optional[int]=None #
-    bgp_role: Optional[str] = None   # <-- nouveau
+    ospf_cost: Optional[int]= None # cout ospf, attribut optionnel de type int, si non renseigné, alors vaut None
+    bgp_role: Optional[str] = None   # provider, customer ou peer
 
 
 @dataclass
 class Router:
     name: str
-    role: str
+    role: str ## is it a core router or orborder router ?
     asn: int
     neighbors: List[Neighbor]
     loopback: Optional[ipaddress.IPv6Address] = None
     interfaces: Dict[str, Interface] = field(default_factory=dict)
     bgp_neighbors: Dict[str, int] = field(default_factory=dict)
     bgp_policies: Dict[str, Dict[str, str]] = field(default_factory=dict)
+
+## la structure : interfaces: Dict[str, Interface] = field(default_factory=dict)
+# interface est un dictionnaire avec des clés de type str et des valeurs de type interface, 
+# field : personalise le comportement de l'atribue. ici : par défaut (si l'user ne donne pas de dict), on mettra un dict vide.
 
 
 
@@ -56,32 +63,60 @@ class AutonomousSystem:
     bgp_policies: Dict[str, Dict] = field(default_factory=dict) ###
 
     def allocate_loopback(self) -> ipaddress.IPv6Address:
-        used = {r.loopback for r in self.routers.values() if r.loopback}
+        """allocates loopback addresses for routers who need one"""
+        used = {r.loopback for r in self.routers.values() if r.loopback} ## r : short for router
         for ip in self.loopback_pool.hosts():
             if ip not in used:
                 return ip
         raise ValueError("Loopback pool exhausted")
 
     def allocate_link_prefix(self, inter_as: bool = False) -> ipaddress.IPv6Network:
-        pool = self.inter_as_link_pool if inter_as else self.link_pool
+        """
+        Alloue le prochain sous-réseau /64 disponible pour un lien réseau.
+        
+        Fonctionnement : Parcourt la plage d'adresses pool (intra-AS ou inter-AS) et retourne le premier 
+        préfixe qui n'est pas encore utilisé par une interface de l'AS.
+
+        Paramètres :
+            inter_as (bool): vérifier s'il faut prendre dans la plage inter as ou l'autre plage
+
+        Return:
+            ipaddress.IPv6Network: Un objet réseau représentant le préfixe /64 alloué.
+        """
+        pool = self.inter_as_link_pool if inter_as else self.link_pool ## pool : plage d'adresses
         subnets = list(pool.subnets(new_prefix=64))
 
         used = set()
         for r in self.routers.values():
             for iface in r.interfaces.values():
-                net = ipaddress.IPv6Network(f"{iface.ipv6}/{iface.prefix_len}", strict=False)
-                used.add(net.supernet(new_prefix=64))
+                net = ipaddress.IPv6Network(f"{iface.ipv6}/{iface.prefix_len}", strict=False) ## creation d'un network, strict = False : qu'on donne une adresse hote (qqch::1/64) ou un reseau (qqch::/64), python comprend qu'on parle d'un réseau.
+                used.add(net.supernet(new_prefix=64)) ## pour pas ré alouer
 
         for net in subnets:
             if net not in used:
                 return net
+        raise ValueError("Link pool exhausted") ## si n'arrive pas à trouver une adresse (car plus de place par ex), raise renvoie un msg d'erreur
 
-        raise ValueError("Link pool exhausted")
 
 
 
 def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
-    data = json.load(open(path))
+    """
+        Analyse le fichier d'intention JSON et construit la topologie réseau logique : charge les données JSON pour créer les instances de classes 
+        AutonomousSystem, Router et Neighbor (interfaces, protocoles IGP, pools IP) et identifie les relations inter-AS (provider, peer, 
+       customer) pour assigner les rôles BGP et les politiques de filtrage (communautés, local-pref) aux routeurs de bordure.
+
+    Paramètres:
+        path (str): Chemin vers le fichier JSON contenant l'intent.
+
+    Return:
+        as_map : Dict[str, AutonomousSystem]: Un dictionnaire associant les noms d'AS à leurs objets respectifs.
+    
+    Note:
+        La fonction utilise un dictionnaire inversé (as_roles) pour mapper les ASN 
+        distants aux rôles définis dans les politiques BGP locales.
+    """
+    data = json.load(open(path)) # open ouvre juste le fichier, c'est load qui le comprend et le convertit en obj python
     as_map: Dict[str, AutonomousSystem] = {}
 
     # Création des objets AutonomousSystem et Router
@@ -98,12 +133,13 @@ def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
             area=as_data["routing"].get("area"),
             bgp_policies = as_data.get("bgp_policies", {})
         )
+        ## création des obj Router
         for rdata in as_data["routers"]:
             router = Router(
                 name=rdata["name"],
                 role=rdata["role"],
                 asn=as_obj.asn,
-                neighbors=[Neighbor(**n) for n in rdata.get("neighbors", [])]
+                neighbors=[Neighbor(**n) for n in rdata.get("neighbors", [])] ## transforme une liste de dictionnaires JSON en une liste d'objets Neighbor. Neighbor(**n) : associe chaque clé du dictionnaire à l'argument correspondant dans la classe Neighbor.
             )
             as_obj.routers[router.name] = router
         as_map[as_obj.name] = as_obj
@@ -116,7 +152,7 @@ def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
         neighbors = bgp_policies.get("as_neighbors", {})
         policies = bgp_policies.get("policies", {})
 
-        # Inverser la table pour retrouver le rôle d’un ASN
+        # Inverser la table pour retrouver le rôle d’un ASN : voir la note dans la docstring
         as_roles = {}
         for role, remote_as_list in neighbors.items():
             if role not in ("provider", "peer", "customer"):
@@ -137,8 +173,9 @@ def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
                     
                     neigh.bgp_role = role
                     policy = {}
+                    ## prépare les policies ici et les écrit dans generate_router_config
                     if role in policies.get("communities", {}):
-                        policy["set_community"] = policies["communities"][role]
+                        policy["set_community"] = policies["communities"][role] 
                     if role in policies.get("local_pref", {}):
                         policy["local_pref"] = policies["local_pref"][role]
                     if role == "provider":
@@ -153,6 +190,20 @@ def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
 
 
 def allocate_addresses(as_map: Dict[str, AutonomousSystem]) -> None:
+    """
+    attribution globale des adresses IPv6 sur le réseau. (loopbacks et liens physiques), gère également l'activation des protocoles IGP (OSPFv3 ou RIPng) sur 
+    chaque interface en fonction de la configuration de l'AS.
+
+    paramètres :
+        as_map (Dict[str, AutonomousSystem]): Un dictionnaire associant les noms d'AS à leurs objets respectifs, créé dans parse_intent
+
+    pas de return 
+
+    Note:
+        L'attribution des liens est bidirectionnelle : lorsqu'un routeur configure 
+        son côté du lien, il configure simultanément l'interface correspondante 
+        chez son voisin pour éviter les doubles allocations.
+    """
     # Loopback allocation
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
@@ -163,8 +214,8 @@ def allocate_addresses(as_map: Dict[str, AutonomousSystem]) -> None:
         for router in as_obj.routers.values():
             for neigh in router.neighbors:
                 if neigh.type == "intra-as":
-                    neigh_router = as_obj.routers[neigh.router]
-                    if neigh.interface not in router.interfaces:
+                    neigh_router = as_obj.routers[neigh.router] ## permet de retrouver l'autre routeur
+                    if neigh.interface not in router.interfaces: ## bidirection et vérification de non-répétition
                         link_prefix = as_obj.allocate_link_prefix(inter_as=False)
                         r_ip = link_prefix[1]
                         n_ip = link_prefix[2]
@@ -196,6 +247,7 @@ def build_bgp_fullmesh(as_map: Dict[str, AutonomousSystem]) -> None:
                 r1.bgp_neighbors[str(r2.loopback)] = as_obj.asn
                 r2.bgp_neighbors[str(r1.loopback)] = as_obj.asn
 
+
 ## nouvelle version 
 def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_iterator) -> None:
     for as_obj in as_map.values():
@@ -209,7 +261,7 @@ def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_itera
 
                         # On récupère un /64 unique depuis l'itérateur global
                         link_prefix = next(inter_as_iterator)
-                        print(f"Attribution inter-AS {router.name} <-> {remote_router_name} : {link_prefix}")
+                        print(f" Attribution inter-AS {router.name} <-> {remote_router_name} : {link_prefix}")
 
                         r_ip = link_prefix[1]
                         n_ip = link_prefix[2]
@@ -233,7 +285,7 @@ def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_itera
 
                         router.bgp_neighbors[str(n_ip)] = remote_as.asn
                         remote_router.bgp_neighbors[str(r_ip)] = as_obj.asn
-                        
+
 # def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem]) -> None:
 #     for as_obj in as_map.values():
 #         for router in as_obj.routers.values():
@@ -553,12 +605,14 @@ def main(intent_path):
     inter_as_iterator = iter(ipaddress.IPv6Network("2001:100:100::/56").subnets(new_prefix=64))
     build_inter_as_neighbors(as_map, inter_as_iterator)
 
+
     if os.path.exists("configs2"):
        shutil.rmtree("configs2") # Supprime le dossier s'il existe déjà
     os.makedirs("configs2", exist_ok=True)
 
     allocate_addresses(as_map)
     build_bgp_fullmesh(as_map)
+    build_inter_as_neighbors(as_map)
 
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
@@ -566,10 +620,8 @@ def main(intent_path):
             with open(f"configs2/i{router.name[1:]}_startup-config.cfg", "w") as f:
                 f.write(cfg)
             print(f"Generated i{router.name[1:]}_startup-config.cfg")
-    
 
 
 if __name__ == "__main__":
-    intent_path = "test.json"
+    intent_path = "intent_9_routers.json"
     main(intent_path)
-
