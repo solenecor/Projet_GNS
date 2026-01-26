@@ -4,8 +4,8 @@
     "auto_start": false,
     "drawing_grid_size": 25,
     "grid_size": 75,
-    "name": "automatisation_telnet",
-    "project_id": "c0def0f1-a724-4174-ba35-06f8686c7c97",
+    "name": "17_routers",
+    "project_id": "b96bb2a0-4c1d-4eb7-b9fb-420dcb36444b",
     "revision": 9,
     "scene_height": 1000,
     "scene_width": 2000,
@@ -2000,3 +2000,4 @@
     "version": "2.2.55",
     "zoom": 84
 }
+
