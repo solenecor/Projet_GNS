@@ -18,14 +18,14 @@
           {"router": "R3", "type": "intra-as", "interface": "GigabitEthernet2/0"}
           ]
         },
-        { "name": "R2", "role": "core", "rr_role": "client", "neighbors": [
+        { "name": "R2", "role": "border", "rr_role": "client", "neighbors": [
           {"router": "R1", "type": "intra-as", "interface": "GigabitEthernet1/0"},
           {"router": "R3", "type": "intra-as", "interface": "GigabitEthernet2/0"},
           {"router": "R4", "type": "intra-as", "interface": "GigabitEthernet3/0"},
           {"router": "AS3:R15", "type": "inter-as", "interface": "FastEthernet0/0"}
           ]
         },
-        { "name": "R3", "role": "core", "rr_role": "client", "neighbors": [
+        { "name": "R3", "role": "border", "rr_role": "client", "neighbors": [
           {"router": "R1", "type": "intra-as", "interface": "GigabitEthernet1/0"},
           {"router": "R2", "type": "intra-as", "interface": "GigabitEthernet2/0"},
           {"router": "R5", "type": "intra-as", "interface": "GigabitEthernet3/0"},
