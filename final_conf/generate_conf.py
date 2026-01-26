@@ -209,7 +209,7 @@ def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_itera
 
                         # On récupère un /64 unique depuis l'itérateur global
                         link_prefix = next(inter_as_iterator)
-                        print(f"🔗 Attribution inter-AS {router.name} <-> {remote_router_name} : {link_prefix}")
+                        print(f"Attribution inter-AS {router.name} <-> {remote_router_name} : {link_prefix}")
 
                         r_ip = link_prefix[1]
                         n_ip = link_prefix[2]
@@ -572,3 +572,4 @@ def main(intent_path):
 if __name__ == "__main__":
     intent_path = "test.json"
     main(intent_path)
+
