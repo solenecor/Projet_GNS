@@ -10,11 +10,12 @@ INTENT_FILE = "intent_file_17_routers.json"
 GNS3_FILE = '17_routers.gns3'
 SOURCE_CFG_DIR = "configs"
 GNS3_PROJECT_ROOT = "" # a compléter si le script est pas à la racine du projet GNS3
+route_reflection = True 
 
 def run_drag_and_drop_bot():
     # lance génération conf
     print("Début de la génération des fichiers de configuration")
-    generate_main(INTENT_FILE)
+    generate_main(INTENT_FILE, route_reflection)
     
     # déploiement  
     if not os.path.exists(GNS3_FILE): # Vérifie existence projet_GNS3.gns3
