@@ -614,7 +614,7 @@ def main(intent_path):
 
     allocate_addresses(as_map)
     build_bgp_fullmesh(as_map)
-    build_inter_as_neighbors(as_map)
+    
 
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
@@ -627,4 +627,5 @@ def main(intent_path):
 if __name__ == "__main__":
     intent_path = "intent_9_routers.json"
     main(intent_path)
+
 
