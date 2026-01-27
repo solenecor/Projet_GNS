@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 
-# importantion génération config
+# importation génération config
 from generate_conf import main as generate_main 
 
 # --- CONFIGURATION ---
@@ -13,6 +13,7 @@ GNS3_PROJECT_ROOT = "" # a compléter si le script est pas à la racine du proje
 
 def run_drag_and_drop_bot():
     # lance génération conf
+    print("Début de la génération des fichiers de configuration")
     generate_main(INTENT_FILE)
     
     # déploiement  

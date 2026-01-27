@@ -284,7 +284,6 @@ def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_itera
 
                         # On récupère un /64 unique depuis l'itérateur global
                         link_prefix = next(inter_as_iterator)
-                        print(f" Attribution inter-AS {router.name} <-> {remote_router_name} : {link_prefix}")
 
                         r_ip = link_prefix[1] # router
                         n_ip = link_prefix[2] # neighbor
