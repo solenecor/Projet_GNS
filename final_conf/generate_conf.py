@@ -310,17 +310,18 @@ def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_itera
                         remote_router.bgp_neighbors[str(r_ip)] = as_obj.asn
 
 def router_id_from_name(router_name: str) -> str:
-    # R1 -> 1.1.1.1
-    num = int(router_name.lstrip("R"))
+    # R1 -> 1.1.1.1 
+    num = int(router_name.lstrip("R")) # enlève le R de R1 et convertit en entier le 1
     return f"{num}.{num}.{num}.{num}"
 
 def determine_bgp_role(local_asn, remote_asn, bgp_policies):
+    '''
+    Parcours la liste des voisin de local_asn et renvoie le role associé au voisin remote_asn (None si rien et rôle si voisin)
+    '''
     for role, as_list in bgp_policies["as_neighbors"].items():
         if remote_asn in as_list:
             return role
     return None
-
-
 
 def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dict[str, AutonomousSystem]) -> str:
     """
@@ -554,31 +555,49 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
     return "\n".join(lines)
 
 def main(intent_path):
-    #intent_path = "intent_file.json"
-    as_map = parse_intent(intent_path)
-    inter_as_iterator = iter(ipaddress.IPv6Network("2001:100:100::/56").subnets(new_prefix=64))
-    build_inter_as_neighbors(as_map, inter_as_iterator)
+    """
+    Orchestre la génération complète des fichiers de configuration réseau à partir d'un fichier d'intention:
+    1. Analyse le fichier JSON d'intention 
+    2. Prépare les sous-réseaux IPv6 pour les liens Inter-AS
+    3. Alloue les adresses IP et construit les topologies BGP 
+    4. Nettoie et recrée le dossier de destination 'configs/'.
+    5. Génère et sauvegarde chaque fichier de configuration 
+
+    Args:
+        intent_path (str): Chemin vers le fichier JSON 
+
+    Returns:
+        None
+
+    Notes:
+        Les fichiers de sortie sont nommés selon le format 'i<num>_startup-config.cfg' 
+        et stockés dans le répertoire local 'configs/'.
+    """
+    as_map = parse_intent(intent_path) # transforme en dico python
+    inter_as_iterator = iter(ipaddress.IPv6Network("2001:100:100::/56").subnets(new_prefix=64)) # découpage en sous réseaux pour liens inter AS
+    build_inter_as_neighbors(as_map, inter_as_iterator) # attribu addr IP lien inter AS 
 
 
     if os.path.exists("configs"):
-       shutil.rmtree("configs") # Supprime le dossier s'il existe déjà
-    os.makedirs("configs", exist_ok=True)
+       shutil.rmtree("configs") # supprime dossier s'il existe déjà
+    os.makedirs("configs", exist_ok=True) # créer dossier 
 
-    allocate_addresses(as_map)
-    build_bgp_fullmesh(as_map)
-    
+    allocate_addresses(as_map) # affectation addr IP 
+    build_bgp_fullmesh(as_map) # iBGP
 
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
-            cfg = generate_router_config(router, as_obj, as_map)
-            with open(f"configs/i{router.name[1:]}_startup-config.cfg", "w") as f:
-                f.write(cfg)
-            print(f"Generated i{router.name[1:]}_startup-config.cfg")
+            cfg = generate_router_config(router, as_obj, as_map) #crée un template avec la conf pour chaque routeur
+            with open(f"configs/i{router.name[1:]}_startup-config.cfg", "w") as f: #création fichier avec bon nom 
+                f.write(cfg) #écrit ce qu'il y a dans le template dans le fichier
+            print(f"Generated i{router.name[1:]}_startup-config.cfg") #message de succes 
 
 
 if __name__ == "__main__":
-    intent_path = "intent_9_routers.json"
+    # Ce bloc ne s'exécute QUE si je lance ce fichier précisément
+    intent_path = "intent_file_17_routers.json"
     main(intent_path)
+
 
 
 
