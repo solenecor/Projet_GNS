@@ -239,17 +239,56 @@ def allocate_addresses(as_map: Dict[str, AutonomousSystem]) -> None:
 
 
 def build_bgp_fullmesh(as_map: Dict[str, AutonomousSystem]) -> None:
+    """
+    Établit une topologie iBGP full-mesh pour chaque système autonome.
+
+    Cette fonction parcourt tous les systèmes autonomes (AS) et connecte les routeurs du même AS
+    via Loopback @. --> chaque routeur établit une session iBGP directe avec tous ses pairs internes dpc pas de pb propagation des routes eBGP dans l'AS.
+
+    Paramètres :
+        as_map (Dict[str, AutonomousSystem]): Un dictionnaire associant les noms d'AS à leurs objets respectifs, créé dans parse_intent
+
+    Return:
+        None car routers directement modif.
+    """
     for as_obj in as_map.values():
         routers = list(as_obj.routers.values())
         for i in range(len(routers)):
-            for j in range(i + 1, len(routers)):
+            for j in range(i + 1, len(routers)): ## parc routeurs *2 
                 r1, r2 = routers[i], routers[j]
-                r1.bgp_neighbors[str(r2.loopback)] = as_obj.asn
+                r1.bgp_neighbors[str(r2.loopback)] = as_obj.asn ## loopback
                 r2.bgp_neighbors[str(r1.loopback)] = as_obj.asn
 
 
-## nouvelle version 
+
 def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_iterator) -> None:
+    """
+    Configure les liens réseaux et les sessions BGP entre différents systèmes autonomes (eBGP).
+
+    Cette fonction parcourt tous les routeurs de chaque AS pour identifier les interfaces 
+    de type "inter-as". Pour chaque nouveau lien détecté, elle utilise un itérateur global 
+    pour allouer un sous-réseau IPv6 /64 unique, évitant ainsi les collisions d'adresses 
+    entre les différentes interconnexions du réseau.
+    éviter collisions d'@ ip avec un iterateur GLOBAL 
+
+    La fonction réalise les opérations suivantes :
+    1. Identification du routeur distant via le format "AS_NAME:ROUTER_NAME".
+    2. Allocation d'un préfixe IPv6 unique via 'inter_as_iterator'.
+    3. Configuration des objets 'Interface' pour les deux routeurs (local et distant).
+    4. Établissement de la relation de voisinage BGP (mise à jour de 'bgp_neighbors').
+
+    Note : La comparaison 'remote_router_name > router.name' est utilisée pour garantir 
+    que chaque lien n'est traité et configuré qu'une seule fois.
+
+    Args:
+        as_map (Dict[str, AutonomousSystem]): Dictionnaire cartographiant les noms d'AS 
+            à leurs objets respectifs.
+        inter_as_iterator (iterator): Itérateur Python générant des sous-réseaux IPv6 
+            (ipaddress.IPv6Network) à partir du pool inter-AS global.
+
+    Returns:
+        None: Les objets Router et Interface au sein de as_map sont modifiés par effet de bord.
+    """
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
             for neigh in router.neighbors:
@@ -285,43 +324,6 @@ def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_itera
 
                         router.bgp_neighbors[str(n_ip)] = remote_as.asn
                         remote_router.bgp_neighbors[str(r_ip)] = as_obj.asn
-
-# def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem]) -> None:
-#     for as_obj in as_map.values():
-#         for router in as_obj.routers.values():
-#             for neigh in router.neighbors:
-#                 if neigh.type == "inter-as":
-#                     remote_as_name, remote_router_name = neigh.router.split(":")
-#                     if remote_router_name > router.name: # pour pas faire deux fois
-#                         remote_as = as_map[remote_as_name]
-#                         remote_router = remote_as.routers[remote_router_name]
-
-#                         link_prefix = as_obj.allocate_link_prefix(inter_as=True)
-#                         subnets = as_obj.inter_as_link_pool.subnets(new_prefix=64) #################
-#                         # On prend le premier subnet qui n'est pas encore dans les interfaces de "router"
-#                         link_prefix = next(s for s in subnets if not any(str(s.network_address) in str(iface.ipv6) for iface in router.interfaces.values()))########################""
-#                         r_ip = link_prefix[1]
-#                         n_ip = link_prefix[2]
-
-#                         router.interfaces[neigh.interface] = Interface(
-#                             name=neigh.interface,
-#                             ipv6=r_ip,
-#                             prefix_len=64,
-#                             ospf_area=as_obj.area if as_obj.protocol == "ospfv3" else None,
-#                             ripng=False
-#                         )
-
-#                         remote_iface = next(n.interface for n in remote_router.neighbors if n.router == f"{as_obj.name}:{router.name}")
-#                         remote_router.interfaces[remote_iface] = Interface(
-#                             name=remote_iface,
-#                             ipv6=n_ip,
-#                             prefix_len=64,
-#                             ospf_area=remote_as.area if remote_as.protocol == "ospfv3" else None,
-#                             ripng=False
-#                         )
-
-#                         router.bgp_neighbors[str(n_ip)] = remote_as.asn
-#                         remote_router.bgp_neighbors[str(r_ip)] = as_obj.asn
 
 def router_id_from_name(router_name: str) -> str:
     # R1 -> 1.1.1.1
@@ -625,3 +627,4 @@ def main(intent_path):
 if __name__ == "__main__":
     intent_path = "intent_9_routers.json"
     main(intent_path)
+
