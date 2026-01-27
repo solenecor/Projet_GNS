@@ -1,5 +1,5 @@
 # Projet de programmation réseau - utilisation de GNS3
-Pour ce projet, nous avons créé différentes configurations: *
+Pour ce projet, nous avons créé différentes configurations:
 
 ## Configurations 
 ### **Configuration à 6 routeurs** ```conf_manuelle```
@@ -25,17 +25,58 @@ Cette configuration est la version finale de notre code comprenant les améliora
 - Les coûts OSPF
 - Le déploiement Telnet
 
-## Fonctionnement
-Avant tout, il faut posséder le fichier `.gns3` avec la configuration souhaitée, ainsi que le fichier `.json` qui contient l'intent file formaté correctement. 
-> Attention : les interfaces précisées dans l'intent file doivent être strictement les mêmes que celles configurées dans GNS3. 
-### Drag and drop bot
-Le fichier `drag_and_drop_bot.py` contient les variables `INTENT_FILE` `.gns3` et `.json`. 
+---
+
+## Utilisation
+
+Avant de commencer, assurez-vous de disposer des éléments suivants :
+
+- Un fichier **`.gns3`** correspondant au projet GNS3 avec la topologie et les équipements configurés.
+- Un fichier **`.json`** (intent file) correctement formaté, décrivant les intentions de configuration.
+- Les scripts Python suivants, placés dans un même répertoire :
+  - `drag_and_drop_bot.py`
+  - `telnet.py`
+  - `generate_conf.py`
+
+> **Attention**  
+> Les interfaces spécifiées dans l’*intent file* doivent correspondre strictement aux interfaces configurées dans GNS3 (noms, numérotation, etc.). Toute incohérence empêchera l’application correcte des configurations.
+
+### Drag and Drop Bot
+
+Le script `drag_and_drop_bot.py` repose sur trois variables principales :
+
+- `INTENT_FILE` : nom du fichier `.json` contenant l’intent.
+- `GNS3_FILE` : nom du fichier `.gns3` du projet.
+- `GNS3_PROJECT_ROOT` : chemin vers la racine du projet GNS3 (uniquement nécessaire si le script n’est pas placé à la racine).
+
+**Recommandation** : placer l’ensemble des fichiers (`.gns3`, `.json` et scripts Python) directement à la racine du projet GNS3 afin d’éviter toute erreur de chemin.
+
+Une fois les variables correctement renseignées, lancez le script : `drag_and_drop_bot.py`
+
+Ce script :
+- génère automatiquement les fichiers de configuration adaptés à chaque routeur ;
+- dépose ces configurations dans les répertoires appropriés du projet GNS3.
+
+> Note importante :
+> 
+> Les routeurs doivent être éteints lors de l’exécution du script.
+> Une fois le script terminé, démarrez les routeurs : les configurations seront alors chargées automatiquement au démarrage.
+
 ### Telnet
 
+Le script `telnet.py` fonctionne selon le même principe de configuration préalable :
+- renseigner correctement les noms des fichiers (`.json`, `.gns3`) ;
+- définir le chemin vers la racine du projet GNS3 si nécessaire.
 
-## Tests de fonctionnement
+Lancez ensuite le script : `telnet.py`
+
+> Note importante :
+> 
+> Les routeurs doivent impérativement être démarrés (liens actifs en vert dans GNS3), car le script se connecte directement à chaque équipement via Telnet.
 
 ---
+
+## Tests de fonctionnement
 
 ### Vérifier les interfaces et adresses IPv6
 
@@ -47,9 +88,7 @@ show ipv6 interface brief
 
 **vérifié si:** Toutes les interfaces sont **"up/up"** avec les bonnes **adresses IPv6** (loopback et liens)
 
----
-
-###  Vérifier RIPng (AS1 : R1, R2, R3)
+###  Vérifier RIPng (AS1)
 
 
 ```bash
@@ -60,9 +99,7 @@ show ipv6 route rip
 
 **vérifié si:**  il y a ripng dans la database de l'AS1, AS3, AS4 et AS5 et des routes avec le code `R` après avoir affiché les routes.
 
----
-
-### Vérifier OSPFv3 (AS2 : R4, R5, R6)
+### Vérifier OSPFv3 (AS2)
 
 
 ```bash
@@ -72,11 +109,16 @@ show ipv6 route ospf
 
 ```
 
-**vérifié si:**  il y a des voisins OSPF en état `FULL/DR`, `FULL/BDR` , les **coûts OSPF** corrects au réseau (dans notre réseau, on a mis 10), des routes avec le code `O` dans `show ipv6 route`
+**vérifié si:**  il y a des voisins OSPF en état `FULL/DR`, `FULL/BDR` , les **coûts OSPF** corrects au réseau (dans notre réseau, on a mis 10 ou 100), des routes avec le code `O` dans `show ipv6 route`
 
----
+### Vérifier costs OSPFv3 (AS2)
 
-### Vérifier les sessions BGP (R3, R4)
+```
+traceroute <ipv6>
+```
+
+**vérifié si:**  de R14 à R12 (ospf_cost = 100), le chemin passe bien par R13, et pas directement sur le lien. 
+### Vérifier les sessions BGP (R7, R9)
 
 ```bash
 show bgp ipv6 unicast summary
@@ -85,11 +127,6 @@ show bgp ipv6 unicast summary
 
 **vérifié si:**  il y a des voisins BGP listés, le **state** à `Established` et des **routes reçues** entre les AS, pour vérifier les routes BGP, `show bgp ipv6 unicast`, il faut appercevoir les préfixes BGP reçus et le **next-hop**, **AS_PATH**, **LocPrf**
  
-
-
-
-
----
 
 ### Vérifier les communities BGP
 
@@ -106,9 +143,14 @@ show bgp ipv6 unicast neighbors <ip> received-routes | include Community
 
 ```
 
-**vérifié si:**  il y a des **communities** ( `1:100`, `2:200`) (ou leur version décimale : - `1:100` = 1\times 65536+100=65636
-- `1:200` = 1\times 65536+200=65736) et les routes taggées 
----
+**vérifié si:**  il y a des **communities** ( `1:10`, `2:20`) (ou leur version décimale : - `1:100` = 1 * 65536+10=65546
+- `1:20` = 1 * 65536+20=65556) et les routes taggées
+
+ou simplement : 
+```
+sh ipv6 route
+```
+**vérifié si:** Par exemple AS3 n'a pas de route vers AS2, et inversement
 
 ### Vérifier les route-maps et community-lists
 
@@ -120,20 +162,15 @@ show run | include community-list
 
 **vérifié si:**  il y a les `route-map SET-COMMUNITY-...`, `SET-LOCALPREF-...`, `EXPORT-FILTER-...` et les `ip community-list` avec les bons IDs
 
----
 
 ### Vérifier les routes exportées
 
-### Commande sur R3 :
-
 ```bash
-show bgp ipv6 unicast neighbors 2001:100:100::2 advertised-routes
+show bgp ipv6 unicast neighbors <ipv6> advertised-routes
 
 ```
 
 **vérifié si:**  seules les routes autorisées par `EXPORT-FILTER` sont envoyées et les bonnes communities sont présentes
-
----
 
 ### Vérifier la connectivité entre 2 routeurs 
 
