@@ -617,7 +617,7 @@ def main(intent_path, route_reflection = False):
 
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
-            cfg = generate_router_config(router, as_obj, as_map) #crée un template avec la conf pour chaque routeur
+            cfg = generate_router_config(router, as_obj, as_map, route_reflection) #crée un template avec la conf pour chaque routeur
             with open(f"configs/i{router.name[1:]}_startup-config.cfg", "w") as f: #création fichier avec bon nom 
                 f.write(cfg) #écrit ce qu'il y a dans le template dans le fichier
             print(f"Generated i{router.name[1:]}_startup-config.cfg") #message de succes 
@@ -626,12 +626,6 @@ def main(intent_path, route_reflection = False):
 if __name__ == "__main__":
     # Ce bloc ne s'exécute QUE si je lance ce fichier précisément
     intent_path = "test.json"
-    main(intent_path)
-
-
-
-
-
-
-
+    route_reflection = True ## Changez à votre guise
+    main(intent_path, route_reflection)
 
