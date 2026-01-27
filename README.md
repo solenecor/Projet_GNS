@@ -25,6 +25,8 @@ Cette configuration est la version finale de notre code comprenant les améliora
 - Les coûts OSPF
 - Le déploiement Telnet
 
+---
+
 ## Utilisation
 
 Avant de commencer, assurez-vous de disposer des éléments suivants :
@@ -38,8 +40,6 @@ Avant de commencer, assurez-vous de disposer des éléments suivants :
 
 > **Attention**  
 > Les interfaces spécifiées dans l’*intent file* doivent correspondre strictement aux interfaces configurées dans GNS3 (noms, numérotation, etc.). Toute incohérence empêchera l’application correcte des configurations.
-
----
 
 ### Drag and Drop Bot
 
@@ -74,9 +74,9 @@ Lancez ensuite le script : `telnet.py`
 > 
 > Les routeurs doivent impérativement être démarrés (liens actifs en vert dans GNS3), car le script se connecte directement à chaque équipement via Telnet.
 
-## Tests de fonctionnement
-
 ---
+
+## Tests de fonctionnement
 
 ### Vérifier les interfaces et adresses IPv6
 
