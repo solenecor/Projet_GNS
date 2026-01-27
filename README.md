@@ -40,6 +40,9 @@ Avant de commencer, assurez-vous de disposer des éléments suivants :
 
 > **Attention**  
 > Les interfaces spécifiées dans l’*intent file* doivent correspondre strictement aux interfaces configurées dans GNS3 (noms, numérotation, etc.). Toute incohérence empêchera l’application correcte des configurations.
+> 
+> Aussi, il existe une fonction Route reflector, pour l'activer, rendez-vous dans les fichiers python `drag_and_drop_bot.py` ou `telnet.py` et passez la variable **route_reflector** à `True`.
+>
 
 ### Drag and Drop Bot
 
@@ -53,6 +56,8 @@ Le script `drag_and_drop_bot.py` repose sur trois variables principales :
 
 Une fois les variables correctement renseignées, lancez le script : `drag_and_drop_bot.py`
 
+Le script est `./` friendly avec le `#!/usr/bin/env python3` donc vous pouvez le lancer avec la commande `python 3 drag_and_drop_bot.py` mais aussi avec `./drag_and_drop_bot.py` (attention, si vous êtes sur windows il faudra juste faire un `dos2unix *` (ou `dos2unix drag_and_drop_bot.py`) pour supprimer les retours chariots entre autres !!)
+
 Ce script :
 - génère automatiquement les fichiers de configuration adaptés à chaque routeur ;
 - dépose ces configurations dans les répertoires appropriés du projet GNS3.
@@ -61,6 +66,7 @@ Ce script :
 > 
 > Les routeurs doivent être éteints lors de l’exécution du script.
 > Une fois le script terminé, démarrez les routeurs : les configurations seront alors chargées automatiquement au démarrage.
+>
 
 ### Telnet
 
