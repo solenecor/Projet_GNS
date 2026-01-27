@@ -35,6 +35,7 @@ class Neighbor:
 class Router:
     name: str
     role: str ## is it a core router or orborder router ?
+    rr_role: str = "client" # par défaut, si rien renseigné, on dir que c pas un reflection router.
     asn: int
     neighbors: List[Neighbor]
     loopback: Optional[ipaddress.IPv6Address] = None
@@ -139,6 +140,7 @@ def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
                 name=rdata["name"],
                 role=rdata["role"],
                 asn=as_obj.asn,
+                rr_role=rdata.get("rr_role", "client"), # <-- Si absent du JSON, rr_role vaudra "client"
                 neighbors=[Neighbor(**n) for n in rdata.get("neighbors", [])] ## transforme une liste de dictionnaires JSON en une liste d'objets Neighbor. Neighbor(**n) : associe chaque clé du dictionnaire à l'argument correspondant dans la classe Neighbor.
             )
             as_obj.routers[router.name] = router
@@ -259,7 +261,33 @@ def build_bgp_fullmesh(as_map: Dict[str, AutonomousSystem]) -> None:
                 r1.bgp_neighbors[str(r2.loopback)] = as_obj.asn ## loopback
                 r2.bgp_neighbors[str(r1.loopback)] = as_obj.asn
 
+def build_bgp_rr(as_map: Dict[str, AutonomousSystem]) -> None:
+    """
+    Établit une topologie iBGP basée sur le Route Reflection pour chaque système autonome.
+    - Les RR-Clients ne font de sessions qu'avec les RR-Servers.
+    - Les RR-Servers font des sessions avec TOUS les autres routeurs (Full-mesh entre Servers + Clients).
 
+    Paramètres :
+        as_map (Dict[str, AutonomousSystem]): Un dictionnaire associant les noms d'AS à leurs objets respectifs, créé dans parse_intent
+
+    Return:
+        None car routers directement modif.
+    """
+    for as_obj in as_map.values():
+        routers = list(as_obj.routers.values())
+        
+        # On identifie les rôles (on utilise .get au cas où le champ est absent)
+        for as_obj in as_map.values():
+        routers = list(as_obj.routers.values())
+        for i in range(len(routers)):
+            for j in range(i + 1, len(routers)):
+                r1, r2 = routers[i], routers[j]
+                
+                # Règle de session iBGP RR :
+                # On crée la session si au moins UN des deux est un serveur.
+                if r1.rr_role == "server" or r2.rr_role == "server":
+                    r1.bgp_neighbors[str(r2.loopback)] = as_obj.asn
+                    r2.bgp_neighbors[str(r1.loopback)] = as_obj.asn
 
 def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_iterator) -> None:
     """
@@ -600,6 +628,7 @@ if __name__ == "__main__":
     # Ce bloc ne s'exécute QUE si je lance ce fichier précisément
     intent_path = "intent_file_17_routers.json"
     main(intent_path)
+
 
 
 
