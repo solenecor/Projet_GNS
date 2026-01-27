@@ -8,7 +8,7 @@ from generate_conf import main as generate_main
 
 INTENT_FILE = "intent_file_17_routers.json"
 GNS3_FILE = '17_routers.gns3'
-
+route_reflection = False
 
 with open(GNS3_FILE, 'r', encoding='utf-8') as f:
     data = json.load(f)
@@ -82,7 +82,7 @@ async def main():
 
     # lance génération conf
     print("Début de la génération des fichiers de configuration")
-    generate_main(INTENT_FILE)
+    generate_main(INTENT_FILE, route_reflection)
     
    
     # On crée une liste de tâches (coroutines)
