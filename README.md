@@ -1,5 +1,8 @@
 # Projet de programmation réseau - utilisation de GNS3
-Pour ce projet, nous avons créé différentes configurations:
+---
+Projet réalisé dans le cadre du projet Réseau GNS-Département TC, par Solène Corbard, Lilou Nadler, Emma Peyrard et Margaux Vallée. 
+---
+Pour ce projet, nous avons créé 3 différentes configurations:
 
 ## Configurations 
 ### **Configuration à 6 routeurs** ```conf_manuelle```
@@ -200,5 +203,9 @@ traceroute ipv6 <loopback_router2>
 ```
 
 **vérifié si:**  le ping réussit et le traceroute suit le **chemin OSPF avec les bons coûts**
+
+---
+
+**C'est la fin du READ ME, bonne lecture de cette énième configuration réseau à 17 routeurs ;)**
 
 
