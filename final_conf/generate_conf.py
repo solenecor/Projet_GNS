@@ -323,6 +323,20 @@ def determine_bgp_role(local_asn, remote_asn, bgp_policies):
 
 
 def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dict[str, AutonomousSystem]) -> str:
+    """
+    Génère l'intégralité du fichier de configuration de démarrage (startup-config) pour un routeur Cisco, avec les paramètres systèmes, interfaces, 
+    voisinage, BGP, RIP, OSPF, Communities et route-map.
+
+    Paramètres :
+        router (Router): L'objet routeur à configurer, avec ses interfaces et voisins.
+        as_obj (AutonomousSystem): Le système autonome auquel appartient le routeur.
+        as_map (Dict[str, AutonomousSystem]): La cartographie globale du réseau pour résoudre 
+            les relations inter-AS.
+
+    Return:
+        str: Une chaîne de caractères contenant l'intégralité des commandes Cisco IOS 
+             prêtes à être écrites dans un fichier .cfg.
+    """
     rid = router_id_from_name(router.name)
 
     # Find inter-AS interface (if any)
@@ -332,15 +346,11 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
             inter_as_iface = neigh.interface
             break
     
-    # Map interface name -> ospf_cost (si défini)
-    iface_costs = {
-        n.interface: n.ospf_cost
-        for n in router.neighbors
-        if n.ospf_cost is not None and n.type == "intra-as"
-    }
+    # si ospf : remplissage des ospf_cost 
+    iface_costs = { n.interface: n.ospf_cost for n in router.neighbors if n.ospf_cost is not None and n.type == "intra-as" } # crée un dico avec les couts ospf par interface 
 
-    # Mapping IP neighbor -> role
-    bgp_role_by_ip = {}
+    
+    bgp_role_by_ip = {} # dico des rôles bgp, puis remplissage :
 
     for neigh in router.neighbors:
         if neigh.type == "inter-as":
@@ -354,12 +364,9 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
             remote_router = remote_as.routers[remote_router_name]
 
             # Trouver l'interface du voisin qui pointe vers nous
-            remote_iface_name = next(
-                n.interface for n in remote_router.neighbors
-                if n.router == f"{as_obj.name}:{router.name}"
-            )
+            remote_iface_name = next( n.interface for n in remote_router.neighbors if n.router == f"{as_obj.name}:{router.name}") # prochaine interface voisine 
 
-            remote_ip = remote_router.interfaces[remote_iface_name].ipv6
+            remote_ip = remote_router.interfaces[remote_iface_name].ipv6 ## .ipv6 : attribut @ ipv6 de la classe interface
 
             # Mapping IP du voisin -> rôle
             bgp_role_by_ip[str(remote_ip)] = neigh.bgp_role
@@ -367,26 +374,26 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
 
     lines = []
     lines.append("!")
-    lines.append("version 15.2")
-    lines.append("service timestamps debug datetime msec")
-    lines.append("service timestamps log datetime msec")
+    lines.append("version 15.2") # version
+    lines.append("service timestamps debug datetime msec") # timestamp pour les msg de debugage je crois
+    lines.append("service timestamps log datetime msec") # timestamp pour les msg de system / de console (log)
     lines.append("!")
     lines.append(f"hostname {router.name}")
     lines.append("!")
-    lines.append("boot-start-marker")
-    lines.append("boot-end-marker")
+    lines.append("boot-start-marker") # flag de début de la zone contenant les commandes de démarrage 
+    lines.append("boot-end-marker") # flag de fin de la zone.
     lines.append("!")
-    lines.append("no aaa new-model")
-    lines.append("no ip icmp rate-limit unreachable")
-    lines.append("ip cef")
+    lines.append("no aaa new-model") # Ne pas activer le nouveau modèle de sécurité AAA (Authentication, Authorization, and Accounting) qui permet de gérer les accès au routeur avec des droits et tout.
+    lines.append("no ip icmp rate-limit unreachable") 
+    lines.append("ip cef") # CEF : Cisco Express Forwarding : permet de simplifier table route / fwd pour router paquets quasi instantanément
     lines.append("!")
-    lines.append("no ip domain lookup")
+    lines.append("no ip domain lookup") # je crois que en gros si erreur on recherche pas l'erreur sur internet mais on affiche msg d'erreur ? 
     lines.append("ipv6 unicast-routing")
     lines.append("ipv6 cef")
     lines.append("!")
-    lines.append("multilink bundle-name authenticated")
+    lines.append("multilink bundle-name authenticated") # si deux lien du même départ menant au même endroit : regroupe les deux liens
     lines.append("!")
-    lines.append("ip tcp synwait-time 5")
+    lines.append("ip tcp synwait-time 5") # si envoi connexion tcp que 5 sec à l'autre côté pour répondre 
     lines.append("!")
     lines.append("interface Loopback0")
     lines.append(" no ip address")
@@ -403,15 +410,13 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         lines.append(f"interface {iface.name}")
         lines.append(" no ip address")
         lines.append(" no shutdown")
-        lines.append(" negotiation auto")
+        lines.append(" negotiation auto") # débit de données envoyer : en prenant le + petit débit 
         lines.append(f" ipv6 address {iface.ipv6}/{iface.prefix_len}")
         lines.append(" ipv6 enable")
 
         if as_obj.protocol == "ospfv3":
             lines.append(f" ipv6 ospf {as_obj.process_id} area {iface.ospf_area}") #
             if iface.name in iface_costs: #
-            #if hasattr(iface, "ospf_cost") and iface.ospf_cost is not None:
-
                 lines.append(f" ipv6 ospf cost {iface_costs[iface.name]}") #
 
         if iface.ripng:
@@ -422,10 +427,11 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
     
     # BGP
     lines.append(f"router bgp {router.asn}")
-    lines.append(f" bgp router-id {rid}")
-    lines.append(" bgp log-neighbor-changes")
+    lines.append(f" bgp router-id {rid}") #rid : router id 
+    lines.append(" bgp log-neighbor-changes") # permet au router d'alerter si y a des changements de states dans ses bgp sessions
     if router.role == "border":
         lines.append(" no synchronization")
+        # no sync pour les border : c ok de partager les routes internes ici car on est en full mesh ? je suis pas sûre
     lines.append(" no bgp default ipv4-unicast")
 
     for neigh_ip, neigh_asn in router.bgp_neighbors.items():
@@ -434,7 +440,7 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
             lines.append(f" neighbor {neigh_ip} update-source Loopback0") # on n'ajoute cette ligne que pour notre as
     
     lines.append(" !")
-    lines.append(" address-family ipv4")
+    lines.append(" address-family ipv4") ## nécessaire ? je suis pas sure 
     lines.append(" exit-address-family")
     lines.append(" !")
     lines.append(" address-family ipv6")
@@ -457,33 +463,12 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
                 lines.append(f"  neighbor {neigh_ip} send-community")
                 lines.append(f"  neighbor {neigh_ip} route-map SET-COMMUNITY-{role} in")
 
-            """if role in as_obj.bgp_policies["policies"].get("local_pref", {}):
-                lines.append(f"  neighbor {neigh_ip} route-map SET-LOCALPREF-{role} in")
-"""
             if role == "provider":
                 lines.append(f"  neighbor {neigh_ip} route-map EXPORT-FILTER-provider out")
 
 
     lines.append(" exit-address-family")
     lines.append("!")
-
-
-
-    """# Rôles BGP réellement présents sur ce routeur
-    roles_present = set()
-
-    for neigh in router.neighbors:
-        if neigh.type == "inter-as":
-            roles_present.add(neigh.bgp_role)
-    # route-maps pour communities (uniquement si le rôle est présent)
-    for role, comm in as_obj.bgp_policies["policies"]["communities"].items():
-        if role not in roles_present:
-            continue
-
-        lines.append(f"route-map SET-COMMUNITY-{role} permit 10")
-        lines.append(f" set community {comm}")
-        lines.append(f" set local-preference {as_obj.bgp_policies["policies"]["local_pref"][role]}")
-        lines.append("!")"""
 
     # Rôles BGP réellement présents sur ce routeur
     roles_present = set()
@@ -493,7 +478,7 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
 
     # --- community-lists ---
     for role in roles_present:
-        comm = as_obj.bgp_policies["policies"]["communities"][role]
+        comm = as_obj.bgp_policies["policies"]["communities"][role] # la pondération associée à la préférence selon le rôle
         lines.append(f"ip community-list standard ONLY-{role.upper()} permit {comm}")
         lines.append("!")
 
@@ -505,23 +490,6 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         lines.append(f"route-map SET-COMMUNITY-{role} permit 10")
         lines.append(f" set community {comm}")
         lines.append(f" set local-preference {lp}")
-        """lines.append("!")
-        lines.append(f"route-map SET-LOCALPREF-{role} permit 10")
-        lines.append(f" set local-preference {lp}")
-        lines.append("!")
-"""
-
-
-    # export filter (seulement si provider présent)
-    """if "provider" in roles_present:
-        comm = as_obj.bgp_policies["policies"]["communities"]["provider"]
-        lines.append(f"ip community-list standard ONLY-EXPORT-provider permit {comm}")
-        lines.append("!")
-        lines.append("route-map EXPORT-FILTER-provider permit 10")
-        lines.append(" match community ONLY-EXPORT-provider")
-        lines.append("!")
-        lines.append("route-map EXPORT-FILTER-provider deny 20")
-        lines.append("!")"""
     
     if "provider" in roles_present:
         lines.append("route-map EXPORT-FILTER-provider deny 10")
@@ -544,13 +512,13 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         lines.append("!")
 
 
-    lines.append("ip forward-protocol nd")
+    lines.append("ip forward-protocol nd") # autorise le protocol à fwd des neighbor discoveries
     lines.append("!")
-    lines.append("no ip http server")
-    lines.append("no ip http secure-server")
+    lines.append("no ip http server") #1.
+    lines.append("no ip http secure-server") # 2. (1 et 2) -> désactiver l'interface web du router
     lines.append("!")
 
-    # Route statique vers le supernet (pour les routeurs border)
+    # Route statique vers le supernet (pour les routeurs border) supernet : bloc d'adresses IPv6 global attribué à l'AS.
     if router.role == "border":
         lines.append(f"ipv6 route {as_obj.ipv6_prefix} Null0")
 
@@ -562,18 +530,18 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         lines.append("ipv6 router ospf 1")
         lines.append(f" router-id {rid}")
         if router.role == "border" and inter_as_iface:
-            lines.append(f" passive-interface {inter_as_iface}")
+            lines.append(f" passive-interface {inter_as_iface}") # évite le partage d'ospf aux AS voisines 
         lines.append("!")
 
-    lines.append("control-plane")
+    lines.append("control-plane") # trafic d'infos destinées au router 
     lines.append("!")
-    lines.append("line con 0")
-    lines.append(" exec-timeout 0 0")
-    lines.append(" privilege level 15")
-    lines.append(" logging synchronous")
-    lines.append(" stopbits 1")
-    lines.append("line aux 0")
-    lines.append(" exec-timeout 0 0")
+    lines.append("line con 0") # permet d'entrer dans la configuration de la ligne console physique
+    lines.append(" exec-timeout 0 0") # désactive le compte à rebours avant fermeture session cisco
+    lines.append(" privilege level 15") # niveaux d'accès de 1 (très peu) à 15 (sudo)
+    lines.append(" logging synchronous") # permet de pouvoir finir de taper ta commande sans te faire couper par la console en plein milieu de ta ligne !!
+    lines.append(" stopbits 1") # chaque bit de fin de transmission de packet sera un 1
+    lines.append("line aux 0") # entrer dans la configuration du port Auxiliaire du routeur.
+    lines.append(" exec-timeout 0 0") ## alors la y a 2 fois les mêmes lignes mais on avait peur de les enlever et que ça marche plus... désolée 
     lines.append(" privilege level 15")
     lines.append(" logging synchronous")
     lines.append(" stopbits 1")
@@ -611,6 +579,7 @@ def main(intent_path):
 if __name__ == "__main__":
     intent_path = "intent_9_routers.json"
     main(intent_path)
+
 
 
 
