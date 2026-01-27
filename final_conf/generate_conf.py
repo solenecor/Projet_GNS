@@ -350,7 +350,7 @@ def determine_bgp_role(local_asn, remote_asn, bgp_policies):
             return role
     return None
 
-def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dict[str, AutonomousSystem]) -> str:
+def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dict[str, AutonomousSystem], reflection_routing = False) -> str:
     """
     Génère l'intégralité du fichier de configuration de démarrage (startup-config) pour un routeur Cisco, avec les paramètres systèmes, interfaces, 
     voisinage, BGP, RIP, OSPF, Communities et route-map.
@@ -466,6 +466,8 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         lines.append(f" neighbor {neigh_ip} remote-as {neigh_asn}")
         if neigh_asn == router.asn:
             lines.append(f" neighbor {neigh_ip} update-source Loopback0") # on n'ajoute cette ligne que pour notre as
+            if reflection_routing and router.rr_role == "server":
+                lines.append(f"  neighbor {neigh_ip} route-reflector-client")
     
     lines.append(" !")
     lines.append(" address-family ipv4") ## nécessaire ? je suis pas sure 
@@ -475,6 +477,8 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
 
     if router.role == "border":
         lines.append(f"  network {as_obj.ipv6_prefix}")
+        if reflection_routing and router.rr_role == "server" and neigh_asn == router.asn:
+            lines.append(f"  neighbor {neigh_ip} route-reflector-client")
 
 
     print(router.name,":",router.bgp_neighbors)
@@ -611,7 +615,7 @@ def main(intent_path, route_reflection = False):
     os.makedirs("configs", exist_ok=True) # créer dossier 
 
     allocate_addresses(as_map) # affectation addr IP 
-    if router_reflection : 
+    if route_reflection : 
         build_bgp_rr(as_map)
     else : 
         build_bgp_fullmesh(as_map) # iBGP
@@ -628,6 +632,7 @@ if __name__ == "__main__":
     # Ce bloc ne s'exécute QUE si je lance ce fichier précisément
     intent_path = "intent_file_17_routers.json"
     main(intent_path)
+
 
 
 
