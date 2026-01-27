@@ -263,47 +263,31 @@ def build_bgp_fullmesh(as_map: Dict[str, AutonomousSystem]) -> None:
 
 def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_iterator) -> None:
     """
-    Configure les liens réseaux et les sessions BGP entre différents systèmes autonomes (eBGP).
+    Pour toutes las iface inter as, création/ remplissage d'un iterateur GLOBAL stockant @ 
+    ip pr éviter d'avoir plusieurs iface avec la même @ip. Alloue une @ ipv6/64 de sous-réseau et config des obj interface pour les 2 routeurs.
 
-    Cette fonction parcourt tous les routeurs de chaque AS pour identifier les interfaces 
-    de type "inter-as". Pour chaque nouveau lien détecté, elle utilise un itérateur global 
-    pour allouer un sous-réseau IPv6 /64 unique, évitant ainsi les collisions d'adresses 
-    entre les différentes interconnexions du réseau.
-    éviter collisions d'@ ip avec un iterateur GLOBAL 
-
-    La fonction réalise les opérations suivantes :
-    1. Identification du routeur distant via le format "AS_NAME:ROUTER_NAME".
-    2. Allocation d'un préfixe IPv6 unique via 'inter_as_iterator'.
-    3. Configuration des objets 'Interface' pour les deux routeurs (local et distant).
-    4. Établissement de la relation de voisinage BGP (mise à jour de 'bgp_neighbors').
-
-    Note : La comparaison 'remote_router_name > router.name' est utilisée pour garantir 
-    que chaque lien n'est traité et configuré qu'une seule fois.
-
-    Args:
-        as_map (Dict[str, AutonomousSystem]): Dictionnaire cartographiant les noms d'AS 
-            à leurs objets respectifs.
+    Paramètres :
+        as_map (Dict[str, AutonomousSystem]): Un dictionnaire associant les noms d'AS à leurs objets respectifs, créé dans parse_intent
         inter_as_iterator (iterator): Itérateur Python générant des sous-réseaux IPv6 
-            (ipaddress.IPv6Network) à partir du pool inter-AS global.
 
-    Returns:
-        None: Les objets Router et Interface au sein de as_map sont modifiés par effet de bord.
+    Return :
+        None: Les objets Router et Interface dans as_map sont modifiés par effet de bord.
     """
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
             for neigh in router.neighbors:
                 if neigh.type == "inter-as":
                     remote_as_name, remote_router_name = neigh.router.split(":")
-                    if remote_router_name > router.name:  # pour pas faire deux fois
-                        remote_as = as_map[remote_as_name]
+                    if remote_router_name > router.name:  # pour vérifier que chaque lien n'est traité qu'une suele fois.
+                        remote_as = as_map[remote_as_name] 
                         remote_router = remote_as.routers[remote_router_name]
 
                         # On récupère un /64 unique depuis l'itérateur global
                         link_prefix = next(inter_as_iterator)
                         print(f" Attribution inter-AS {router.name} <-> {remote_router_name} : {link_prefix}")
 
-                        r_ip = link_prefix[1]
-                        n_ip = link_prefix[2]
+                        r_ip = link_prefix[1] # router
+                        n_ip = link_prefix[2] # neighbor
 
                         router.interfaces[neigh.interface] = Interface(
                             name=neigh.interface,
@@ -312,8 +296,8 @@ def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_itera
                             ospf_area=as_obj.area if as_obj.protocol == "ospfv3" else None,
                             ripng=False
                         )
-
-                        remote_iface = next(n.interface for n in remote_router.neighbors if n.router == f"{as_obj.name}:{router.name}")
+                        ## remote : désigne le voisin ( local : routeur sur lequel on est, remote; routeur au bout de la liaison avec le local)
+                        remote_iface = next(n.interface for n in remote_router.neighbors if n.router == f"{as_obj.name}:{router.name}") # la prochaine interface voisine si on est dans mon router)
                         remote_router.interfaces[remote_iface] = Interface(
                             name=remote_iface,
                             ipv6=n_ip,
@@ -627,5 +611,6 @@ def main(intent_path):
 if __name__ == "__main__":
     intent_path = "intent_9_routers.json"
     main(intent_path)
+
 
 
