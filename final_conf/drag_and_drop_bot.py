@@ -26,9 +26,10 @@ def run_drag_and_drop_bot():
         # Fichier source généré 
         source_file = os.path.join(SOURCE_CFG_DIR, f"i{name[1:]}_startup-config.cfg")
         
-        # Vérifier si le fichier généré existe bien
+
+         # Vérifier si le fichier généré existe bien
         if os.path.exists(source_file):
-           target_path = os.path.join(GNS3_PROJECT_ROOT, "project-files", "dynamips", node_id, "configs", f"i{name[1:]}_startup-config.cfg")
+            target_path = os.path.join(GNS3_PROJECT_ROOT, "project-files", "dynamips", node_id, "configs", f"i{name[1:]}_startup-config.cfg")
 
             try:
                 # Créer le dossier de destination s'il n'existe pas
