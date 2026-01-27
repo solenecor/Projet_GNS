@@ -35,7 +35,7 @@ def deploiement_telnet(data):
 
         tn.write(b"conf t\r\n") # Passage en mode configuration
 
-        tn.write(b"line con 0\r\nlogging synchronous\r\nexit\r\n") # On désactive le blabla des logs au milieu de notre config
+        tn.write(b"line con 0\r\nlogging synchronous\r\nexit\r\n") # On fait en sorte que le blabla de la console ne nous coupe pas au milieu de notre config quand une commande est en train d'etre ecrite
 
         tn.write(b"no ip domain-lookup\r\n")  # On désactive la recherche DNS pour éviter les blocages notamment en cas d'instruction envoyée alors qu'on est pas au bon endroit (> au lieu de # par ex)
         
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     # lance génération des configs
     print("Début de la génération des fichiers de configuration")
-    generate_main(INTENT_FILE)
+    generate_main(INTENT_FILE, route_reflection)
 
     # charge le fichier gns3
     with open(GNS3_FILE, 'r', encoding='utf-8') as f:
@@ -72,10 +72,11 @@ if __name__ == "__main__":
     for node in data['topology']['nodes']: # le fichiers gns3 est sous la forme de liste de liste de noeuds
         name = node['name'] # on récupère le nom,
         port = node['console'] # le port associé
-        path = f"configs/i{name[1:]}_startup-config.cfg" # Chemin vers où le script de génération a déposé les fichiers de config
+        path = f"configs/i{name[1:]}_startup-config.cfg" # Chemin vers où le script de génération a déposé les fichiers de config, name[1:] retire la première lettre (R17 -> 17) pour correspondre au nom du fichier config
         tasks_data.append((name, port, path))
 
     print(f"Lancement du déploiement des routeurs")
+    # on lance la configuration des routeurs en parrallèle pour aller + vite
     with Pool(processes=20) as pool:
         results = pool.map(deploiement_telnet, tasks_data)
 
