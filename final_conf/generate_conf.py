@@ -35,6 +35,7 @@ class Neighbor:
 class Router:
     name: str
     role: str ## is it a core router or orborder router ?
+    rr_role: str = "client" # par défaut, si rien renseigné, on dir que c pas un reflection router.
     asn: int
     neighbors: List[Neighbor]
     rr_role: str = "client" # par défaut, si rien renseigné, on dir que c pas un reflection router.
@@ -479,7 +480,6 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         lines.append(f"  network {as_obj.ipv6_prefix}")
         if reflection_routing and router.rr_role == "server" and neigh_asn == router.asn:
             lines.append(f"  neighbor {neigh_ip} route-reflector-client")
-
 
 
     for neigh_ip in router.bgp_neighbors.keys():
