@@ -592,9 +592,9 @@ def main(intent_path):
     build_inter_as_neighbors(as_map, inter_as_iterator)
 
 
-    if os.path.exists("configs2"):
-       shutil.rmtree("configs2") # Supprime le dossier s'il existe déjà
-    os.makedirs("configs2", exist_ok=True)
+    if os.path.exists("configs"):
+       shutil.rmtree("configs") # Supprime le dossier s'il existe déjà
+    os.makedirs("configs", exist_ok=True)
 
     allocate_addresses(as_map)
     build_bgp_fullmesh(as_map)
@@ -603,7 +603,7 @@ def main(intent_path):
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
             cfg = generate_router_config(router, as_obj, as_map)
-            with open(f"configs2/i{router.name[1:]}_startup-config.cfg", "w") as f:
+            with open(f"configs/i{router.name[1:]}_startup-config.cfg", "w") as f:
                 f.write(cfg)
             print(f"Generated i{router.name[1:]}_startup-config.cfg")
 
@@ -611,6 +611,7 @@ def main(intent_path):
 if __name__ == "__main__":
     intent_path = "intent_9_routers.json"
     main(intent_path)
+
 
 
 
