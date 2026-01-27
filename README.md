@@ -25,13 +25,54 @@ Cette configuration est la version finale de notre code comprenant les améliora
 - Les coûts OSPF
 - Le déploiement Telnet
 
-## Fonctionnement
-Avant tout, il faut posséder le fichier `.gns3` avec la configuration souhaitée, ainsi que le fichier `.json` qui contient l'intent file formaté correctement. 
-> Attention : les interfaces précisées dans l'intent file doivent être strictement les mêmes que celles configurées dans GNS3. 
-### Drag and drop bot
-Le fichier `drag_and_drop_bot.py` contient les variables `INTENT_FILE` `.gns3` et `.json`. 
+## Utilisation
+
+Avant de commencer, assurez-vous de disposer des éléments suivants :
+
+- Un fichier **`.gns3`** correspondant au projet GNS3 avec la topologie et les équipements configurés.
+- Un fichier **`.json`** (intent file) correctement formaté, décrivant les intentions de configuration.
+- Les scripts Python suivants, placés dans un même répertoire :
+  - `drag_and_drop_bot.py`
+  - `telnet.py`
+  - `generate_conf.py`
+
+> **Attention**  
+> Les interfaces spécifiées dans l’*intent file* doivent correspondre strictement aux interfaces configurées dans GNS3 (noms, numérotation, etc.). Toute incohérence empêchera l’application correcte des configurations.
+
+---
+
+### Drag and Drop Bot
+
+Le script `drag_and_drop_bot.py` repose sur trois variables principales :
+
+- `INTENT_FILE` : nom du fichier `.json` contenant l’intent.
+- `GNS3_FILE` : nom du fichier `.gns3` du projet.
+- `GNS3_PROJECT_ROOT` : chemin vers la racine du projet GNS3 (uniquement nécessaire si le script n’est pas placé à la racine).
+
+**Recommandation** : placer l’ensemble des fichiers (`.gns3`, `.json` et scripts Python) directement à la racine du projet GNS3 afin d’éviter toute erreur de chemin.
+
+Une fois les variables correctement renseignées, lancez le script : `drag_and_drop_bot.py`
+
+Ce script :
+- génère automatiquement les fichiers de configuration adaptés à chaque routeur ;
+- dépose ces configurations dans les répertoires appropriés du projet GNS3.
+
+> Note importante :
+> 
+> Les routeurs doivent être éteints lors de l’exécution du script.
+> Une fois le script terminé, démarrez les routeurs : les configurations seront alors chargées automatiquement au démarrage.
+
 ### Telnet
 
+Le script `telnet.py` fonctionne selon le même principe de configuration préalable :
+- renseigner correctement les noms des fichiers (`.json`, `.gns3`) ;
+- définir le chemin vers la racine du projet GNS3 si nécessaire.
+
+Lancez ensuite le script : `telnet.py`
+
+> Note importante :
+> 
+> Les routeurs doivent impérativement être démarrés (liens actifs en vert dans GNS3), car le script se connecte directement à chaque équipement via Telnet.
 
 ## Tests de fonctionnement
 
