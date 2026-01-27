@@ -553,7 +553,7 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
 
     return "\n".join(lines)
 
-def main(intent_path):
+def main(intent_path, route_reflection = False):
     """
     Orchestre la génération complète des fichiers de configuration réseau à partir d'un fichier d'intention:
     1. Analyse le fichier JSON d'intention 
@@ -564,6 +564,7 @@ def main(intent_path):
 
     Args:
         intent_path (str): Chemin vers le fichier JSON 
+        route_reflection : est-ce qu'on fait le réseau en full-mesh ou en route_reflection avec un routeur désigné reflector router ?
 
     Returns:
         None
@@ -582,7 +583,10 @@ def main(intent_path):
     os.makedirs("configs", exist_ok=True) # créer dossier 
 
     allocate_addresses(as_map) # affectation addr IP 
-    build_bgp_fullmesh(as_map) # iBGP
+    if router_reflection : 
+        build_bgp_rr(as_map)
+    else : 
+        build_bgp_fullmesh(as_map) # iBGP
 
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
@@ -596,6 +600,7 @@ if __name__ == "__main__":
     # Ce bloc ne s'exécute QUE si je lance ce fichier précisément
     intent_path = "intent_file_17_routers.json"
     main(intent_path)
+
 
 
 
