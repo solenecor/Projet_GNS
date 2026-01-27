@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 
 ### bonne version 
@@ -626,9 +625,8 @@ def main(intent_path, route_reflection = False):
 
 if __name__ == "__main__":
     # Ce bloc ne s'exécute QUE si je lance ce fichier précisément
-    intent_path = "intent_file_17_routers.json"
+    intent_path = "test.json"
     main(intent_path)
-
 
 
 
