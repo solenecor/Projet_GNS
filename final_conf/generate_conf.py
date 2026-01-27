@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 
 ### bonne version 
@@ -37,6 +36,8 @@ class Router:
     role: str ## is it a core router or orborder router ?
     asn: int
     neighbors: List[Neighbor]
+    rr_role: str = "client" # par défaut, si rien renseigné, on dir que c pas un reflection router.
+    rr_role: str = "client" # par défaut, si rien renseigné, on dir que c pas un reflection router.
     loopback: Optional[ipaddress.IPv6Address] = None
     interfaces: Dict[str, Interface] = field(default_factory=dict)
     bgp_neighbors: Dict[str, int] = field(default_factory=dict)
@@ -139,6 +140,7 @@ def parse_intent(path: str) -> Dict[str, AutonomousSystem]:
                 name=rdata["name"],
                 role=rdata["role"],
                 asn=as_obj.asn,
+                rr_role=rdata.get("rr_role", "client"), # <-- Si absent du JSON, rr_role vaudra "client"
                 neighbors=[Neighbor(**n) for n in rdata.get("neighbors", [])] ## transforme une liste de dictionnaires JSON en une liste d'objets Neighbor. Neighbor(**n) : associe chaque clé du dictionnaire à l'argument correspondant dans la classe Neighbor.
             )
             as_obj.routers[router.name] = router
@@ -259,7 +261,33 @@ def build_bgp_fullmesh(as_map: Dict[str, AutonomousSystem]) -> None:
                 r1.bgp_neighbors[str(r2.loopback)] = as_obj.asn ## loopback
                 r2.bgp_neighbors[str(r1.loopback)] = as_obj.asn
 
+def build_bgp_rr(as_map: Dict[str, AutonomousSystem]) -> None:
+    """
+    Établit une topologie iBGP basée sur le Route Reflection pour chaque système autonome.
+    - Les RR-Clients ne font de sessions qu'avec les RR-Servers.
+    - Les RR-Servers font des sessions avec TOUS les autres routeurs (Full-mesh entre Servers + Clients).
 
+    Paramètres :
+        as_map (Dict[str, AutonomousSystem]): Un dictionnaire associant les noms d'AS à leurs objets respectifs, créé dans parse_intent
+
+    Return:
+        None car routers directement modif.
+    """
+    for as_obj in as_map.values():
+        routers = list(as_obj.routers.values())
+        
+        # On identifie les rôles (on utilise .get au cas où le champ est absent)
+        for as_obj in as_map.values():
+            routers = list(as_obj.routers.values())
+            for i in range(len(routers)):
+                for j in range(i + 1, len(routers)):
+                    r1, r2 = routers[i], routers[j]
+                
+                # Règle de session iBGP RR :
+                # On crée la session si au moins UN des deux est un serveur.
+                if r1.rr_role == "server" or r2.rr_role == "server":
+                    r1.bgp_neighbors[str(r2.loopback)] = as_obj.asn
+                    r2.bgp_neighbors[str(r1.loopback)] = as_obj.asn
 
 def build_inter_as_neighbors(as_map: Dict[str, AutonomousSystem], inter_as_iterator) -> None:
     """
@@ -322,7 +350,7 @@ def determine_bgp_role(local_asn, remote_asn, bgp_policies):
             return role
     return None
 
-def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dict[str, AutonomousSystem]) -> str:
+def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dict[str, AutonomousSystem], reflection_routing = False) -> str:
     """
     Génère l'intégralité du fichier de configuration de démarrage (startup-config) pour un routeur Cisco, avec les paramètres systèmes, interfaces, 
     voisinage, BGP, RIP, OSPF, Communities et route-map.
@@ -438,6 +466,8 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         lines.append(f" neighbor {neigh_ip} remote-as {neigh_asn}")
         if neigh_asn == router.asn:
             lines.append(f" neighbor {neigh_ip} update-source Loopback0") # on n'ajoute cette ligne que pour notre as
+            if reflection_routing and router.rr_role == "server":
+                lines.append(f"  neighbor {neigh_ip} route-reflector-client")
     
     lines.append(" !")
     lines.append(" address-family ipv4") ## nécessaire ? je suis pas sure 
@@ -447,26 +477,31 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
 
     if router.role == "border":
         lines.append(f"  network {as_obj.ipv6_prefix}")
+        if reflection_routing and router.rr_role == "server" and neigh_asn == router.asn:
+            lines.append(f"  neighbor {neigh_ip} route-reflector-client")
 
 
-    print(router.name,":",router.bgp_neighbors)
     for neigh_ip in router.bgp_neighbors.keys():
         role = bgp_role_by_ip.get(neigh_ip)
 
         lines.append(f"  neighbor {neigh_ip} activate")
         if router.bgp_neighbors[neigh_ip] == router.asn:
             lines.append(f"  neighbor {neigh_ip} next-hop-self")
+            lines.append(f"  neighbor {neigh_ip} send-community")
+
 
         # Appliquer la policy selon le rôle (provider/peer/customer)
         if role:
             if role in as_obj.bgp_policies["policies"].get("communities", {}):
-                lines.append(f"  neighbor {neigh_ip} send-community")
-                lines.append(f"  neighbor {neigh_ip} route-map SET-COMMUNITY-{role} in")
+                lines.append(f"  neighbor {neigh_ip} route-map SET-COMMUNITY-{role.upper()} in")
+                
+            if role == "customer":
+                # On envoie TOUT au client (Internet, nos routes, etc.)
+                lines.append(f"  neighbor {neigh_ip} route-map PASS-ALL out")
 
-            if role == "provider":
-                lines.append(f"  neighbor {neigh_ip} route-map EXPORT-FILTER-provider out")
-
-
+            elif role in ["provider", "peer"]:
+                # On applique tes filtres de sécurité Gao-Rexford
+                lines.append(f"  neighbor {neigh_ip} route-map EXPORT-FILTER-{role.upper()} out")
     lines.append(" exit-address-family")
     lines.append("!")
 
@@ -477,9 +512,14 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
             roles_present.add(neigh.bgp_role)
 
     # --- community-lists ---
-    for role in roles_present:
-        comm = as_obj.bgp_policies["policies"]["communities"][role] # la pondération associée à la préférence selon le rôle
-        lines.append(f"ip community-list standard ONLY-{role.upper()} permit {comm}")
+    if router.role == "border": # il faut d├®finir les communaut├®s 
+                                # sur tous les routeurs de bordure, m├¬me s'ils n'ont
+                                #  pas de voisin direct comme ├ºa (par exemple, ils peuvent
+                                #  avoir besoin d'appliquer une route map sur cette community, 
+                                # m├¬me sans avoir de voisin de ce type)
+        for role in ["peer","customer","provider"]:
+            comm = as_obj.bgp_policies["policies"]["communities"][role]
+            lines.append(f"ip community-list standard ONLY-{role.upper()} permit {comm}")
         lines.append("!")
 
     # --- route-maps set community + local-pref ---
@@ -487,31 +527,24 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         comm = as_obj.bgp_policies["policies"]["communities"][role]
         lp = as_obj.bgp_policies["policies"]["local_pref"][role]
 
-        lines.append(f"route-map SET-COMMUNITY-{role} permit 10")
+        lines.append(f"route-map SET-COMMUNITY-{role.upper()} permit 10")
         lines.append(f" set community {comm}")
         lines.append(f" set local-preference {lp}")
-    
-    if "provider" in roles_present:
-        lines.append("route-map EXPORT-FILTER-provider deny 10")
-        lines.append(" match community ONLY-PEER")
-        lines.append("!")
-        lines.append("route-map EXPORT-FILTER-provider deny 20")
-        lines.append(" match community ONLY-PROVIDER")
-        lines.append("!")
-        lines.append("route-map EXPORT-FILTER-provider permit 30")
-        lines.append("!")
-
-    if "peer" in roles_present:
-        lines.append("route-map EXPORT-FILTER-peer deny 10")
-        lines.append(" match community ONLY-PEER")
-        lines.append("!")
-        lines.append("route-map EXPORT-FILTER-peer deny 20")
-        lines.append(" match community ONLY-PROVIDER")
-        lines.append("!")
-        lines.append("route-map EXPORT-FILTER-peer permit 30")
         lines.append("!")
 
 
+    # export filter (seulement si provider ou peer dans les voisins)    
+    for role in ["provider","peer"]:
+        if role in roles_present:
+            lines.append(f"route-map EXPORT-FILTER-{role.upper()} deny 10")
+            lines.append(" match community ONLY-PEER")
+            lines.append(f"route-map EXPORT-FILTER-{role.upper()} deny 20")
+            lines.append(" match community ONLY-PROVIDER")
+            lines.append(f"route-map EXPORT-FILTER-{role.upper()} permit 30")
+            lines.append("!")
+    if "customer" in roles_present:
+        lines.append("route-map PASS-ALL permit 10")
+        lines.append("!")
     lines.append("ip forward-protocol nd") # autorise le protocol à fwd des neighbor discoveries
     lines.append("!")
     lines.append("no ip http server") #1.
@@ -583,14 +616,14 @@ def main(intent_path, route_reflection = False):
     os.makedirs("configs", exist_ok=True) # créer dossier 
 
     allocate_addresses(as_map) # affectation addr IP 
-    if router_reflection : 
+    if route_reflection : 
         build_bgp_rr(as_map)
     else : 
         build_bgp_fullmesh(as_map) # iBGP
 
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
-            cfg = generate_router_config(router, as_obj, as_map) #crée un template avec la conf pour chaque routeur
+            cfg = generate_router_config(router, as_obj, as_map, reflection_routing = route_reflection) 
             with open(f"configs/i{router.name[1:]}_startup-config.cfg", "w") as f: #création fichier avec bon nom 
                 f.write(cfg) #écrit ce qu'il y a dans le template dans le fichier
             print(f"Generated i{router.name[1:]}_startup-config.cfg") #message de succes 
@@ -598,12 +631,7 @@ def main(intent_path, route_reflection = False):
 
 if __name__ == "__main__":
     # Ce bloc ne s'exécute QUE si je lance ce fichier précisément
-    intent_path = "intent_file_17_routers.json"
-    main(intent_path)
-
-
-
-
-
-
+    intent_path = "test.json"
+    route_reflection = True ## Changez à votre guise
+    main(intent_path, route_reflection)
 

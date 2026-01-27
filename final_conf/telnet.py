@@ -7,6 +7,7 @@ from generate_conf import main as generate_main
 
 INTENT_FILE = "intent_file_17_routers.json"
 GNS3_FILE = '17_routers.gns3'
+route_reflection = False
 
 # charge le fichier gns3
 with open(GNS3_FILE, 'r', encoding='utf-8') as f:
@@ -76,7 +77,7 @@ async def main():
 
     # lance génération des configs
     print("Début de la génération des fichiers de configuration")
-    generate_main(INTENT_FILE)
+    generate_main(INTENT_FILE, route_reflection)
     
    
     # On crée une liste de tâches, 1 par routeur

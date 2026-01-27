@@ -1,5 +1,10 @@
 # Projet de programmation réseau - utilisation de GNS3
-Pour ce projet, nous avons créé différentes configurations:
+
+
+Projet réalisé dans le cadre du projet Réseau GNS-Département TC, par Solène Corbard, Lilou Nadler, Emma Peyrard et Margaux Vallée. 
+
+---
+Pour ce projet, nous avons créé 3 différentes configurations:
 
 ## Configurations 
 ### **Configuration à 6 routeurs** ```conf_manuelle```
@@ -8,18 +13,30 @@ Cette configuration a été réalisée à la main pendant les 4 premières heure
 
 Elle contient également des **bgp policies** (impliquant la création de *route-maps*) pour vérifier le bon fonctionnement de notre fichier d'automatisation python.
 
+### **Configuration à 9 routeurs**  ```3AS```
+
+Cette configuration a été réalisée avec un fichier d'intentions à la suite du projet et a particulièrement servi à tester les premières mises en place des **BGP policies** est des **route-maps**. Nous avons surtout vérifié le fonctionnement de la hiérarchie BGP, puisque le réseau était composé de 3 AS de rôles différents.
+
+
+### **Configuration à 14 routeursµ** (dans ```final_conf```)
+
+Première version de ce qui était attendu dans le projet, il s'agit d'un réseau de 2 AS de rôle "peer" contenant chacune 7 routeurs. Cette configuration comporte aussi des BGP policies entre les routeurs. Contrairement aux deux premières, celle-ci a un peu + de routeurs et surcharge un peu plus les processeurs.
+
 ### **Configuration à 17 routeurs** ```final_conf```
 
  ![Configuration à 17 routeurs et connexion avec d'autres AS](img/final_config.png)
 
-Description de la configuration: 
+
+Cette fois-ci, nous reprenons la configuration à 14 routeurs en ajoutant des AS voisines pour analyser et vérifier le bon fonctionnement des rôles BGP. On ajoute notamment un provider et deux clients en suivant un modèle pyramidal (provider AS3 en haut, puis 2 AS peer AS1 et AS2, puis sous une AS peer 2 customers AS4 et AS5)
+
+**Description de la configuration:**
 - AS1: {R1, R2, R3, R4, R5, R6, R7} ; RIP ; qui a le rôle de peer
 - AS2: {R7, R8, R9, R10, R11, R12, R13, R14}; OSPF ; qui a le rôle de peer
 - AS3: {R15}; RIP ; qui a le rôle de provider
 - AS4: {R16}; RIP ; qui a le rôle de customer
 - AS5: {R17}; RIP ; qui a le rôle de customer
 
-Cette configuration est la version finale de notre code comprenant les améliorations suivantes: 
+**Cette configuration est la version finale de notre code comprenant les améliorations suivantes:**
 - Les BGP Policies
 - Les Router Reflector
 - Les coûts OSPF
@@ -40,6 +57,9 @@ Avant de commencer, assurez-vous de disposer des éléments suivants :
 
 > **Attention**  
 > Les interfaces spécifiées dans l’*intent file* doivent correspondre strictement aux interfaces configurées dans GNS3 (noms, numérotation, etc.). Toute incohérence empêchera l’application correcte des configurations.
+> 
+> Aussi, il existe une fonction Route reflector, pour l'activer, rendez-vous dans les fichiers python `drag_and_drop_bot.py` ou `telnet.py` et passez la variable **route_reflector** à `True`.
+>
 
 ### Drag and Drop Bot
 
@@ -53,6 +73,8 @@ Le script `drag_and_drop_bot.py` repose sur trois variables principales :
 
 Une fois les variables correctement renseignées, lancez le script : `drag_and_drop_bot.py`
 
+Le script est `./` friendly avec le `#!/usr/bin/env python3` donc vous pouvez le lancer avec la commande `python 3 drag_and_drop_bot.py` mais aussi avec `./drag_and_drop_bot.py` (attention, si vous êtes sur windows il faudra juste faire un `dos2unix *` (ou `dos2unix drag_and_drop_bot.py`) pour supprimer les retours chariots entre autres !!)
+
 Ce script :
 - génère automatiquement les fichiers de configuration adaptés à chaque routeur ;
 - dépose ces configurations dans les répertoires appropriés du projet GNS3.
@@ -61,6 +83,7 @@ Ce script :
 > 
 > Les routeurs doivent être éteints lors de l’exécution du script.
 > Une fois le script terminé, démarrez les routeurs : les configurations seront alors chargées automatiquement au démarrage.
+>
 
 ### Telnet
 
@@ -182,5 +205,9 @@ traceroute ipv6 <loopback_router2>
 ```
 
 **vérifié si:**  le ping réussit et le traceroute suit le **chemin OSPF avec les bons coûts**
+
+---
+
+**C'est la fin du READ ME, bonne lecture de cette énième configuration réseau à 17 routeurs ;)**
 
 
