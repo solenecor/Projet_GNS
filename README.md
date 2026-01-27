@@ -1,5 +1,5 @@
 # Projet de programmation réseau - utilisation de GNS3
-Pour ce projet, nous avons créé différentes configurations: *
+Pour ce projet, nous avons créé différentes configurations:
 
 ## Configurations 
 ### **Configuration à 6 routeurs** ```conf_manuelle```
