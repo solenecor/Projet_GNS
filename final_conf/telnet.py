@@ -13,7 +13,7 @@ tasks_data = []
 for node in data['topology']['nodes']:
 	name = node['name']
 	port = node['console']
-	path = f"configs2/i{name[1:]}_startup-config.cfg" # Dossier où le script de génération a déposé les fichiers de config
+	path = f"configs/i{name[1:]}_startup-config.cfg" # Dossier où le script de génération a déposé les fichiers de config
 	tasks_data.append((name, port, path))
 
 def wrapper(args):
