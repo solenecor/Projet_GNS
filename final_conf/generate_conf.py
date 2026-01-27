@@ -626,4 +626,6 @@ def main(intent_path, route_reflection = False):
 if __name__ == "__main__":
     # Ce bloc ne s'exécute QUE si je lance ce fichier précisément
     intent_path = "test.json"
-    main(intent_path, True)
+    route_reflection = True ## Changez à votre guise
+    main(intent_path, route_reflection)
+
