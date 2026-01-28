@@ -20,7 +20,7 @@ def run_drag_and_drop_bot():
     generate_main(INTENT_FILE, route_reflection)
     
     # déploiement  
-    if not os.path.exists(GNS3_FILE): # Vérifie existence projet_GNS3.gns3
+    if not os.path.exists(GNS3_FILE): # Vérifie existence du projet
         print(f"Erreur : Le fichier {GNS3_FILE} est introuvable.")
         return 
 
