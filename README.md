@@ -168,7 +168,7 @@ show bgp ipv6 unicast neighbors <ip> received-routes | include Community
 
 ```
 
-**vérifié si:**  il y a des **communities** ( `1:10`, `2:20`) (ou leur version décimale : - `1:100` = 1 * 65536+10=65546
+**vérifié si:**  il y a des **communities** ( `1:10`, `1:20`) (ou leur version décimale : - `1:100` = 1 * 65536+10=65546
 - `1:20` = 1 * 65536+20=65556) et les routes taggées
 
 ou simplement : 
