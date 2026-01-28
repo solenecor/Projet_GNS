@@ -86,6 +86,8 @@ Ce script :
 >
 
 ### Telnet
+Il faut tout d'abord installer la librairie ``telnetlib3``.
+
 
 Le script `telnet.py` fonctionne selon le même principe de configuration préalable :
 - renseigner correctement les noms des fichiers (`.json`, `.gns3`) ;
