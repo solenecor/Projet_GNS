@@ -36,8 +36,7 @@ class Router:
     role: str ## is it a core router or orborder router ?
     asn: int
     neighbors: List[Neighbor]
-    rr_role: str = "client" # par défaut, si rien renseigné, on dir que c pas un reflection router.
-    rr_role: str = "client" # par défaut, si rien renseigné, on dir que c pas un reflection router.
+    rr_role: str = "client" # par défaut, si rien renseigné, on dit que c pas un reflection router.
     loopback: Optional[ipaddress.IPv6Address] = None
     interfaces: Dict[str, Interface] = field(default_factory=dict)
     bgp_neighbors: Dict[str, int] = field(default_factory=dict)
