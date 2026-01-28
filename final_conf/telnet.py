@@ -22,7 +22,7 @@ def deploiement_telnet(data):
         index, _, _ = tn.expect([b"yes/no]:", b"Router>", b"Press RETURN", b"console by console"], timeout=60) # on attend que le routeur soit prêt, chacune de ces options indique qu'il attend une action
 
         if index == 0:
-            tn.write(b'no\r\n') # pour répondre à la quetsion "Would you like to enter the initial configuration dialog? [yes/no]:" qui peut apparaître au début
+            tn.write(b'no\r\n') # pour répondre à la question "Would you like to enter the initial configuration dialog? [yes/no]:" qui peut apparaître au début
             time.sleep(0.1)
 
         tn.write(b"\r\n") # Simule la touche "Entrée" pour réveiller la console, b signifie qu'on envoie des bytes
@@ -49,7 +49,7 @@ def deploiement_telnet(data):
                 
         # Sauvegarde et fin
         tn.write(b"write memory\r\n\r\n") # double \r\n pour la confirmation
-        time.sleep(0.1)
+        time.sleep(0.3)
         tn.write(b"exit\r\n")
 
         return f"{router_name} OK"
