@@ -18,7 +18,7 @@ Elle contient également des **bgp policies** (impliquant la création de *route
 Cette configuration a été réalisée avec un fichier d'intentions à la suite du projet et a particulièrement servi à tester les premières mises en place des **BGP policies** est des **route-maps**. Nous avons surtout vérifié le fonctionnement de la hiérarchie BGP, puisque le réseau était composé de 3 AS de rôles différents.
 
 
-### **Configuration à 14 routeursµ** (dans ```final_conf```)
+### **Configuration à 14 routeurs** ```14_routers```
 
 Première version de ce qui était attendu dans le projet, il s'agit d'un réseau de 2 AS de rôle "peer" contenant chacune 7 routeurs. Cette configuration comporte aussi des BGP policies entre les routeurs. Contrairement aux deux premières, celle-ci a un peu + de routeurs et surcharge un peu plus les processeurs.
 
