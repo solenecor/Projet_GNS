@@ -201,8 +201,8 @@ show bgp ipv6 unicast neighbors <ipv6> advertised-routes
 
 
 ```bash
-ping ipv6 <loopback_router_1>
-traceroute ipv6 <loopback_router2>
+ping <loopback_router_dest> source <loopback_router_source>
+traceroute ipv6 <loopback_router_dest>
 
 ```
 
