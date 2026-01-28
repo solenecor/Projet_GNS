@@ -494,10 +494,14 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
         if role:
             if role in as_obj.bgp_policies["policies"].get("communities", {}):
                 lines.append(f"  neighbor {neigh_ip} route-map SET-COMMUNITY-{role.upper()} in")
+                
+            if role == "customer":
+                # On envoie TOUT au client (Internet, nos routes, etc.)
+                lines.append(f"  neighbor {neigh_ip} route-map PASS-ALL out")
 
-            if role in ["provider","peer"]:
+            elif role in ["provider", "peer"]:
+                # On applique tes filtres de sécurité Gao-Rexford
                 lines.append(f"  neighbor {neigh_ip} route-map EXPORT-FILTER-{role.upper()} out")
-
     lines.append(" exit-address-family")
     lines.append("!")
 
@@ -538,7 +542,9 @@ def generate_router_config(router: Router, as_obj: AutonomousSystem, as_map: Dic
             lines.append(" match community ONLY-PROVIDER")
             lines.append(f"route-map EXPORT-FILTER-{role.upper()} permit 30")
             lines.append("!")
-
+    if "customer" in roles_present:
+        lines.append("route-map PASS-ALL permit 10")
+        lines.append("!")
     lines.append("ip forward-protocol nd") # autorise le protocol à fwd des neighbor discoveries
     lines.append("!")
     lines.append("no ip http server") #1.
@@ -617,7 +623,7 @@ def main(intent_path, route_reflection = False):
 
     for as_obj in as_map.values():
         for router in as_obj.routers.values():
-            cfg = generate_router_config(router, as_obj, as_map, route_reflection) #crée un template avec la conf pour chaque routeur
+            cfg = generate_router_config(router, as_obj, as_map, reflection_routing = route_reflection) 
             with open(f"configs/i{router.name[1:]}_startup-config.cfg", "w") as f: #création fichier avec bon nom 
                 f.write(cfg) #écrit ce qu'il y a dans le template dans le fichier
             print(f"Generated i{router.name[1:]}_startup-config.cfg") #message de succes 
