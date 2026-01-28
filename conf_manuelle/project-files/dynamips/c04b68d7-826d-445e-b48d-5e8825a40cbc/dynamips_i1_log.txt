@@ -1,0 +1,55 @@
+Dec 16 14:58:41.377 HYPERVISOR: Release 0.2.17-x86/Windows (tag 2017072410)
+Dec 16 14:58:41.377 HYPERVISOR: Started on IP = localhost, TCP port = 49179.
+Dec 16 14:58:41.632 HYPERVISOR: exec_cmd: hypervisor version 
+Dec 16 14:58:41.632 HYPERVISOR: exec_cmd: hypervisor working_dir C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips 
+Dec 16 14:58:41.632 GENERAL: working_dir=C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips
+Dec 16 14:58:41.632 HYPERVISOR: exec_cmd: hypervisor working_dir C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips\c04b68d7-826d-445e-b48d-5e8825a40cbc 
+Dec 16 14:58:41.632 GENERAL: working_dir=C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips\c04b68d7-826d-445e-b48d-5e8825a40cbc
+Dec 16 14:58:41.632 HYPERVISOR: exec_cmd: vm create R1 1 c7200 
+Dec 16 14:58:41.632 VM: VM R1 created.
+Dec 16 14:58:41.632 HYPERVISOR: exec_cmd: vm set_con_tcp_port R1 5000 
+Dec 16 14:58:41.632 HYPERVISOR: exec_cmd: c7200 get_mac_addr R1 
+Dec 16 14:58:41.632 HYPERVISOR: exec_cmd: vm get_status R1 
+Dec 16 14:58:41.632 HYPERVISOR: exec_cmd: vm slot_add_binding R1 0 0 C7200-IO-FE 
+Dec 16 14:58:41.648 HYPERVISOR: exec_cmd: vm set_ios R1 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:58:41.648 HYPERVISOR: exec_cmd: vm set_exec_area R1 64 
+Dec 16 14:58:41.648 HYPERVISOR: exec_cmd: vm set_ram R1 512 
+Dec 16 14:58:41.648 HYPERVISOR: exec_cmd: vm set_nvram R1 512 
+Dec 16 14:58:41.648 HYPERVISOR: exec_cmd: vm set_disk0 R1 0 
+Dec 16 14:58:41.648 HYPERVISOR: exec_cmd: vm get_status R1 
+Dec 16 14:58:41.648 HYPERVISOR: exec_cmd: vm slot_add_binding R1 1 0 PA-GE 
+Dec 16 14:58:41.648 HYPERVISOR: exec_cmd: vm get_status R1 
+Dec 16 14:58:41.648 HYPERVISOR: exec_cmd: vm slot_add_binding R1 2 0 PA-GE 
+Dec 16 14:58:41.703 HYPERVISOR: exec_cmd: vm set_ios R1 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:58:48.886 HYPERVISOR: exec_cmd: vm set_ios R1 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 15:00:14.113 HYPERVISOR: exec_cmd: nio create_udp udp-1f8fb0d4-6b63-4e3a-b154-169ea36dfad2 10002 127.0.0.1 10003 
+Dec 16 15:00:14.619 HYPERVISOR: exec_cmd: vm slot_add_nio_binding R1 1 0 udp-1f8fb0d4-6b63-4e3a-b154-169ea36dfad2 
+Dec 16 15:00:14.619 HYPERVISOR: exec_cmd: vm get_status R1 
+Dec 16 15:00:57.434 HYPERVISOR: exec_cmd: vm set_ios R1 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 15:01:11.658 HYPERVISOR: exec_cmd: vm set_ghost_status R1 2 
+Dec 16 15:01:11.658 HYPERVISOR: exec_cmd: vm set_ghost_file R1 C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips\c7200-advipservicesk9-mz.152-4.S5.image-512.ghost 
+Dec 16 15:01:11.660 HYPERVISOR: exec_cmd: vm get_status R1 
+Dec 16 15:01:11.661 HYPERVISOR: exec_cmd: vm set_config R1 configs\i1_startup-config.cfg 
+Dec 16 15:01:11.661 HYPERVISOR: exec_cmd: vm start R1 
+Dec 16 15:01:41.783 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 15:02:18.444 HYPERVISOR: exec_cmd: vm set_ios R1 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 15:04:41.896 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 15:14:42.112 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 15:29:12.369 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 15:33:42.451 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 16:30:43.351 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 16:53:13.670 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 17:14:14.008 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 17:14:44.019 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 17:32:14.626 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 17:35:31.315 HYPERVISOR: exec_cmd: vm get_status R1 
+Dec 16 17:35:31.317 HYPERVISOR: exec_cmd: vm stop R1 
+Dec 16 17:35:31.681 VM: VM R1 shutdown.
+Dec 16 17:35:31.685 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 17:35:32.341 HYPERVISOR: exec_cmd: vm get_status R1 
+Dec 16 17:35:32.345 HYPERVISOR: exec_cmd: vm extract_config R1 
+Dec 16 17:35:32.352 HYPERVISOR: exec_cmd: vm delete R1 
+Dec 16 17:35:32.352 VM: VM R1 destroyed.
+Dec 16 17:35:32.361 HYPERVISOR: exec_cmd: hypervisor stop 
+Dec 16 17:35:32.787 HYPERVISOR: Stopped.
+Dec 16 17:35:32.787 GENERAL: reset done.

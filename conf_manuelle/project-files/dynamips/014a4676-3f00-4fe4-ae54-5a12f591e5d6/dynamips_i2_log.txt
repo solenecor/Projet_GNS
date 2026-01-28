@@ -1,0 +1,56 @@
+Dec 16 14:58:42.269 HYPERVISOR: Release 0.2.17-x86/Windows (tag 2017072410)
+Dec 16 14:58:42.269 HYPERVISOR: Started on IP = localhost, TCP port = 49186.
+Dec 16 14:58:42.763 HYPERVISOR: exec_cmd: hypervisor version 
+Dec 16 14:58:42.765 HYPERVISOR: exec_cmd: hypervisor working_dir C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips 
+Dec 16 14:58:42.765 GENERAL: working_dir=C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips
+Dec 16 14:58:42.765 HYPERVISOR: exec_cmd: hypervisor working_dir C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips\014a4676-3f00-4fe4-ae54-5a12f591e5d6 
+Dec 16 14:58:42.765 GENERAL: working_dir=C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips\014a4676-3f00-4fe4-ae54-5a12f591e5d6
+Dec 16 14:58:42.765 HYPERVISOR: exec_cmd: vm create R2 2 c7200 
+Dec 16 14:58:42.765 VM: VM R2 created.
+Dec 16 14:58:42.765 HYPERVISOR: exec_cmd: vm set_con_tcp_port R2 5001 
+Dec 16 14:58:42.765 HYPERVISOR: exec_cmd: c7200 get_mac_addr R2 
+Dec 16 14:58:42.765 HYPERVISOR: exec_cmd: vm get_status R2 
+Dec 16 14:58:42.765 HYPERVISOR: exec_cmd: vm slot_add_binding R2 0 0 C7200-IO-FE 
+Dec 16 14:58:42.765 HYPERVISOR: exec_cmd: vm set_ios R2 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:58:42.777 HYPERVISOR: exec_cmd: vm set_exec_area R2 64 
+Dec 16 14:58:42.777 HYPERVISOR: exec_cmd: vm set_ram R2 512 
+Dec 16 14:58:42.777 HYPERVISOR: exec_cmd: vm set_nvram R2 512 
+Dec 16 14:58:42.779 HYPERVISOR: exec_cmd: vm set_disk0 R2 0 
+Dec 16 14:58:42.779 HYPERVISOR: exec_cmd: vm get_status R2 
+Dec 16 14:58:42.779 HYPERVISOR: exec_cmd: vm slot_add_binding R2 1 0 PA-GE 
+Dec 16 14:58:42.779 HYPERVISOR: exec_cmd: vm get_status R2 
+Dec 16 14:58:42.779 HYPERVISOR: exec_cmd: vm slot_add_binding R2 2 0 PA-GE 
+Dec 16 14:58:42.840 HYPERVISOR: exec_cmd: vm set_ios R2 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:58:51.892 HYPERVISOR: exec_cmd: vm set_ios R2 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:58:55.644 HYPERVISOR: exec_cmd: vm set_ios R2 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 15:00:14.626 HYPERVISOR: exec_cmd: nio create_udp udp-3c72062e-d73b-48ae-87e9-1a1cd24ec572 10004 127.0.0.1 10005 
+Dec 16 15:00:14.919 HYPERVISOR: exec_cmd: vm slot_add_nio_binding R2 1 0 udp-3c72062e-d73b-48ae-87e9-1a1cd24ec572 
+Dec 16 15:00:14.919 HYPERVISOR: exec_cmd: vm get_status R2 
+Dec 16 15:00:18.614 HYPERVISOR: exec_cmd: nio create_udp udp-033b0128-11cd-4c0b-a283-35228d0a1451 10008 127.0.0.1 10009 
+Dec 16 15:00:18.630 HYPERVISOR: exec_cmd: vm slot_add_nio_binding R2 2 0 udp-033b0128-11cd-4c0b-a283-35228d0a1451 
+Dec 16 15:00:18.630 HYPERVISOR: exec_cmd: vm get_status R2 
+Dec 16 15:01:11.655 HYPERVISOR: exec_cmd: vm set_ghost_status R2 2 
+Dec 16 15:01:11.656 HYPERVISOR: exec_cmd: vm set_ghost_file R2 C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips\c7200-advipservicesk9-mz.152-4.S5.image-512.ghost 
+Dec 16 15:01:11.656 HYPERVISOR: exec_cmd: vm get_status R2 
+Dec 16 15:01:11.658 HYPERVISOR: exec_cmd: vm set_config R2 configs\i2_startup-config.cfg 
+Dec 16 15:01:11.658 HYPERVISOR: exec_cmd: vm start R2 
+Dec 16 15:01:42.126 HYPERVISOR: exec_cmd: vm extract_config R2 
+Dec 16 15:02:20.043 HYPERVISOR: exec_cmd: vm set_ios R2 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 15:07:12.275 HYPERVISOR: exec_cmd: vm extract_config R2 
+Dec 16 15:15:42.760 HYPERVISOR: exec_cmd: vm extract_config R2 
+Dec 16 15:30:43.001 HYPERVISOR: exec_cmd: vm extract_config R2 
+Dec 16 15:34:13.043 HYPERVISOR: exec_cmd: vm extract_config R2 
+Dec 16 16:36:13.913 HYPERVISOR: exec_cmd: vm extract_config R2 
+Dec 16 16:56:43.974 HYPERVISOR: exec_cmd: vm extract_config R2 
+Dec 16 17:14:44.115 HYPERVISOR: exec_cmd: vm extract_config R2 
+Dec 16 17:35:31.317 HYPERVISOR: exec_cmd: vm get_status R2 
+Dec 16 17:35:31.317 HYPERVISOR: exec_cmd: vm stop R2 
+Dec 16 17:35:31.767 VM: VM R2 shutdown.
+Dec 16 17:35:31.787 HYPERVISOR: exec_cmd: vm extract_config R2 
+Dec 16 17:35:32.347 HYPERVISOR: exec_cmd: vm get_status R2 
+Dec 16 17:35:32.354 HYPERVISOR: exec_cmd: vm extract_config R2 
+Dec 16 17:35:32.361 HYPERVISOR: exec_cmd: vm delete R2 
+Dec 16 17:35:32.361 VM: VM R2 destroyed.
+Dec 16 17:35:32.381 HYPERVISOR: exec_cmd: hypervisor stop 
+Dec 16 17:35:32.787 HYPERVISOR: Stopped.
+Dec 16 17:35:32.787 GENERAL: reset done.

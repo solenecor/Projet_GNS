@@ -1,0 +1,62 @@
+Dec 16 14:58:47.650 HYPERVISOR: Release 0.2.17-x86/Windows (tag 2017072410)
+Dec 16 14:58:47.650 HYPERVISOR: Started on IP = localhost, TCP port = 49211.
+Dec 16 14:58:48.144 HYPERVISOR: exec_cmd: hypervisor version 
+Dec 16 14:58:48.145 HYPERVISOR: exec_cmd: hypervisor working_dir C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips 
+Dec 16 14:58:48.146 GENERAL: working_dir=C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips
+Dec 16 14:58:48.146 HYPERVISOR: exec_cmd: hypervisor working_dir C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips\a4b20fe5-3c4d-47c6-8f1c-cdcb7b0cb671 
+Dec 16 14:58:48.148 GENERAL: working_dir=C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips\a4b20fe5-3c4d-47c6-8f1c-cdcb7b0cb671
+Dec 16 14:58:48.148 HYPERVISOR: exec_cmd: vm create R6 6 c7200 
+Dec 16 14:58:48.149 VM: VM R6 created.
+Dec 16 14:58:48.152 HYPERVISOR: exec_cmd: vm set_con_tcp_port R6 5005 
+Dec 16 14:58:48.152 HYPERVISOR: exec_cmd: c7200 get_mac_addr R6 
+Dec 16 14:58:48.152 HYPERVISOR: exec_cmd: vm get_status R6 
+Dec 16 14:58:48.153 HYPERVISOR: exec_cmd: vm slot_add_binding R6 0 0 C7200-IO-FE 
+Dec 16 14:58:48.154 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:58:48.156 HYPERVISOR: exec_cmd: vm set_exec_area R6 64 
+Dec 16 14:58:48.156 HYPERVISOR: exec_cmd: vm set_ram R6 512 
+Dec 16 14:58:48.156 HYPERVISOR: exec_cmd: vm set_nvram R6 512 
+Dec 16 14:58:48.157 HYPERVISOR: exec_cmd: vm set_disk0 R6 0 
+Dec 16 14:58:48.158 HYPERVISOR: exec_cmd: vm get_status R6 
+Dec 16 14:58:48.159 HYPERVISOR: exec_cmd: vm slot_add_binding R6 1 0 PA-GE 
+Dec 16 14:58:48.159 HYPERVISOR: exec_cmd: vm get_status R6 
+Dec 16 14:58:48.160 HYPERVISOR: exec_cmd: vm slot_add_binding R6 2 0 PA-GE 
+Dec 16 14:58:48.206 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:59:00.590 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:59:01.567 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:59:02.251 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:59:03.868 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:59:08.683 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:59:13.774 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 14:59:29.413 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 15:00:33.554 HYPERVISOR: exec_cmd: nio create_udp udp-bda2750a-ed7f-4cc0-922d-b2d05a33b098 10028 127.0.0.1 10029 
+Dec 16 15:00:33.839 HYPERVISOR: exec_cmd: vm slot_add_nio_binding R6 1 0 udp-bda2750a-ed7f-4cc0-922d-b2d05a33b098 
+Dec 16 15:00:33.839 HYPERVISOR: exec_cmd: vm get_status R6 
+Dec 16 15:00:45.126 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 15:01:12.121 HYPERVISOR: exec_cmd: vm set_ghost_status R6 2 
+Dec 16 15:01:12.121 HYPERVISOR: exec_cmd: vm set_ghost_file R6 C:\Users\solen\OneDrive\Documents\INSA\3A\projet_GNS\project-files\dynamips\c7200-advipservicesk9-mz.152-4.S5.image-512.ghost 
+Dec 16 15:01:12.121 HYPERVISOR: exec_cmd: vm get_status R6 
+Dec 16 15:01:12.128 HYPERVISOR: exec_cmd: vm set_config R6 configs\i6_startup-config.cfg 
+Dec 16 15:01:12.130 HYPERVISOR: exec_cmd: vm start R6 
+Dec 16 15:01:42.622 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 15:02:26.121 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 15:02:27.508 HYPERVISOR: exec_cmd: vm set_ios R6 C:/Users/solen/GNS3/images/IOS/c7200-advipservicesk9-mz.152-4.S5.image 
+Dec 16 15:12:13.052 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 15:18:13.281 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 15:44:43.683 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 15:46:13.697 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 16:43:44.542 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 16:58:14.804 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 17:17:45.159 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 17:30:15.740 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 17:30:45.759 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 17:35:31.806 HYPERVISOR: exec_cmd: vm get_status R6 
+Dec 16 17:35:31.806 HYPERVISOR: exec_cmd: vm stop R6 
+Dec 16 17:35:32.192 VM: VM R6 shutdown.
+Dec 16 17:35:32.192 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 17:35:32.343 HYPERVISOR: exec_cmd: vm get_status R6 
+Dec 16 17:35:32.345 HYPERVISOR: exec_cmd: vm extract_config R6 
+Dec 16 17:35:32.358 HYPERVISOR: exec_cmd: vm delete R6 
+Dec 16 17:35:32.358 VM: VM R6 destroyed.
+Dec 16 17:35:32.361 HYPERVISOR: exec_cmd: hypervisor stop 
+Dec 16 17:35:32.787 HYPERVISOR: Stopped.
+Dec 16 17:35:32.787 GENERAL: reset done.
